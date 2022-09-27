@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="..\..\Strangers.uproject" />
+    <Filter Include="Source">
+      <UniqueIdentifier>{C79D1CC0-EE01-460B-A54F-DD864219BA87}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Source\Strangers.Target.cs">
+      <Filter>Source</Filter>
+    </None>
+    <None Include="..\..\Source\StrangersEditor.Target.cs">
+      <Filter>Source</Filter>
+    </None>
+    <Filter Include="Config">
+      <UniqueIdentifier>{B6A6B151-24AD-42D1-AA1F-D3C01F976C98}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Config\DefaultEditor.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultEngine.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultGame.ini">
+      <Filter>Config</Filter>
+    </None>
+    <Filter Include="Source\Strangers">
+      <UniqueIdentifier>{184AEDE9-532D-4178-996D-20E5825DCB81}</UniqueIdentifier>
+    </Filter>
+    <ClCompile Include="..\..\Source\Strangers\MyGameModeBase.cpp">
+      <Filter>Source\Strangers</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\Strangers\MyGameModeBase.h">
+      <Filter>Source\Strangers</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Source\Strangers\MyPawn.cpp">
+      <Filter>Source\Strangers</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\Strangers\MyPawn.h">
+      <Filter>Source\Strangers</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Source\Strangers\MyPlayerController.cpp">
+      <Filter>Source\Strangers</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\Strangers\MyPlayerController.h">
+      <Filter>Source\Strangers</Filter>
+    </ClInclude>
+    <None Include="..\..\Source\Strangers\Strangers.Build.cs">
+      <Filter>Source\Strangers</Filter>
+    </None>
+    <ClCompile Include="..\..\Source\Strangers\Strangers.cpp">
+      <Filter>Source\Strangers</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\Strangers\Strangers.h">
+      <Filter>Source\Strangers</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Source\Strangers\StrangersGameModeBase.cpp">
+      <Filter>Source\Strangers</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\Strangers\StrangersGameModeBase.h">
+      <Filter>Source\Strangers</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

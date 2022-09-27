@@ -1,0 +1,2 @@
+C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Development\Strangers\Definitions.Strangers.h
+C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Source\Strangers\Strangers.h
