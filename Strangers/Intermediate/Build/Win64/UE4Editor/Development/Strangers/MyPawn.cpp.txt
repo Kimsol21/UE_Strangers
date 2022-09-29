@@ -1,5 +1,5 @@
-C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Development\Strangers\Definitions.Strangers.h
-C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Source\Strangers\MyPawn.h
+C:\Users\ksol9\Documents\GitHub\UE_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Development\Strangers\Definitions.Strangers.h
+C:\Users\ksol9\Documents\GitHub\UE_Strangers\Strangers\Source\Strangers\MyPawn.h
 C:\Program Files\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\GameFramework/FloatingPawnMovement.h
 C:\Program Files\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\GameFramework/PawnMovementComponent.h
 C:\Program Files\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\GameFramework/NavMovementComponent.h
@@ -18,4 +18,4 @@ C:\Program Files\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\Compone
 C:\Program Files\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\Components/ShapeComponent.h
 C:\Program Files\Epic Games\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\ShapeComponent.generated.h
 C:\Program Files\Epic Games\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\CapsuleComponent.generated.h
-C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Inc\Strangers\MyPawn.generated.h
+C:\Users\ksol9\Documents\GitHub\UE_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Inc\Strangers\MyPawn.generated.h

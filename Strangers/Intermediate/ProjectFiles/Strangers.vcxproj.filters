@@ -3,7 +3,7 @@
   <ItemGroup>
     <None Include="..\..\Strangers.uproject" />
     <Filter Include="Source">
-      <UniqueIdentifier>{C79D1CC0-EE01-460B-A54F-DD864219BA87}</UniqueIdentifier>
+      <UniqueIdentifier>{DC339DEB-7177-4551-B3F4-92D6CA42D270}</UniqueIdentifier>
     </Filter>
     <None Include="..\..\Source\Strangers.Target.cs">
       <Filter>Source</Filter>
@@ -12,7 +12,7 @@
       <Filter>Source</Filter>
     </None>
     <Filter Include="Config">
-      <UniqueIdentifier>{B6A6B151-24AD-42D1-AA1F-D3C01F976C98}</UniqueIdentifier>
+      <UniqueIdentifier>{66D8A75F-90DD-4606-879F-4AEBB8C666BD}</UniqueIdentifier>
     </Filter>
     <None Include="..\..\Config\DefaultEditor.ini">
       <Filter>Config</Filter>
@@ -23,8 +23,11 @@
     <None Include="..\..\Config\DefaultGame.ini">
       <Filter>Config</Filter>
     </None>
+    <None Include="..\..\Config\DefaultInput.ini">
+      <Filter>Config</Filter>
+    </None>
     <Filter Include="Source\Strangers">
-      <UniqueIdentifier>{184AEDE9-532D-4178-996D-20E5825DCB81}</UniqueIdentifier>
+      <UniqueIdentifier>{8BB75FEA-7359-4E25-BCE0-B4DD1423A56D}</UniqueIdentifier>
     </Filter>
     <ClCompile Include="..\..\Source\Strangers\MyGameModeBase.cpp">
       <Filter>Source\Strangers</Filter>

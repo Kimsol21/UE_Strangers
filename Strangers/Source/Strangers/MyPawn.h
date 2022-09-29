@@ -45,4 +45,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 		UCameraComponent* Camera;//카메라
 
+
+private:
+	void UpDown(float NewAxisValue); //폰 상하좌우 이동 관련 함수.
+	void LeftRight(float NewAxisValue);
+
 };

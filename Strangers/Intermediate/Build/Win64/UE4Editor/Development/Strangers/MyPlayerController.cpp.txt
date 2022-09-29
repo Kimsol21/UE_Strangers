@@ -1,3 +1,3 @@
-C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Development\Strangers\Definitions.Strangers.h
-C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Source\Strangers\MyPlayerController.h
-C:\Users\ksol9\Documents\GitHub\UE4_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Inc\Strangers\MyPlayerController.generated.h
+C:\Users\ksol9\Documents\GitHub\UE_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Development\Strangers\Definitions.Strangers.h
+C:\Users\ksol9\Documents\GitHub\UE_Strangers\Strangers\Source\Strangers\MyPlayerController.h
+C:\Users\ksol9\Documents\GitHub\UE_Strangers\Strangers\Intermediate\Build\Win64\UE4Editor\Inc\Strangers\MyPlayerController.generated.h

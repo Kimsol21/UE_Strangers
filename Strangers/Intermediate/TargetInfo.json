@@ -2,12 +2,12 @@
 	"Targets": [
 		{
 			"Name": "Strangers",
-			"Path": "C:\\Users\\ksol9\\Documents\\GitHub\\UE4_Strangers\\Strangers\\Source\\Strangers.Target.cs",
+			"Path": "C:\\Users\\ksol9\\Documents\\GitHub\\UE_Strangers\\Strangers\\Source\\Strangers.Target.cs",
 			"Type": "Game"
 		},
 		{
 			"Name": "StrangersEditor",
-			"Path": "C:\\Users\\ksol9\\Documents\\GitHub\\UE4_Strangers\\Strangers\\Source\\StrangersEditor.Target.cs",
+			"Path": "C:\\Users\\ksol9\\Documents\\GitHub\\UE_Strangers\\Strangers\\Source\\StrangersEditor.Target.cs",
 			"Type": "Editor"
 		}
 	]

@@ -6,9 +6,11 @@
 // Sets default values
 AMyPawn::AMyPawn()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	
+
+	//언리얼 오브젝트 생성 및 세부사항 설정.
 	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CAPSULE"));
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MESH"));
 	Movement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MOVEMENT"));
@@ -26,7 +28,8 @@ AMyPawn::AMyPawn()
 	SpringArm->TargetArmLength = 400.0f;
 	SpringArm->SetRelativeRotation(FRotator(-15.0f, 0.0f, 0.0f));
 
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh>SM_KWANG(TEXT("SkeletalMesh'/Game/ParagonKwang/Characters/Heroes/Kwang/Meshes/KwangRosewood.KwangRosewood'"));
+	//폰 에셋 적용.
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh>SM_KWANG(TEXT("SkeletalMesh'/Game/Assets/ParagonKwang/Characters/Heroes/Kwang/Meshes/KwangRosewood.KwangRosewood'"));
 	if (SM_KWANG.Succeeded())
 	{
 		Mesh->SetSkeletalMesh(SM_KWANG.Object);
@@ -52,5 +55,19 @@ void AMyPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	// 설정한 입력 세팅을 Pawn의 함수와 Binding시키기.
+	PlayerInputComponent->BindAxis(TEXT("UpDown"), this, &AMyPawn::UpDown); //TEXT 안의 값은 입력 세팅의 이름이다.
+	PlayerInputComponent->BindAxis(TEXT("LeftRight"), this, &AMyPawn::LeftRight);
+
+}
+
+void AMyPawn::UpDown(float NewAxisValue)
+{
+	AddMovementInput(GetActorForwardVector(), NewAxisValue);//상하로 폰이동.
+}
+
+void AMyPawn::LeftRight(float NewAxisValue)
+{
+	AddMovementInput(GetActorRightVector(), NewAxisValue); //좌우로 폰이동.
 }
 
