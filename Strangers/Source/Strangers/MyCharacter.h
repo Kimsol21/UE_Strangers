@@ -27,6 +27,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override; //Actor 컴포넌트가 완전히 초기화된 이후 호출된다.게임 플레이 중에만 호출
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;//액터가 받은 대미지를 처리하는 로직을 추가하기 위해 오버라이드.
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -42,6 +43,8 @@ private:
 	void LeftRight(float NewAxisValue);
 	void LookUp(float NewAxisValue);
 	void Turn(float NewAxisValue);
+	void ZoomIn();
+	void ZoomOut();
 	void Attack();
 
 	UFUNCTION()
@@ -49,8 +52,19 @@ private:
 
 	void AttackStartComboState(); //공격이 시작할 때 관련 속성 지정.
 	void AttackEndComboState();//공격이 종료할때 사용.
+	void AttackCheck();//물리엔진으로 공격감지.
 
 private:
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = SpringArm, Meta = (AllowPrivateAccess = true))
+		float ExpectedSpringArmLength; //스프링암 길이 목표값.
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+		bool bCanAttackSmallMove; //공격미세이동여부.
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+		FVector ExpectedAttackLocation; //공격미세이동목표값.
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
 		bool bIsAttacking;//현재 공격중인지 판단.
 
@@ -65,6 +79,12 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
 		int32 MaxCombo; //콤보 카운터의 최대치
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+		float AttackRange;//공격 감지 구가 지나갈 길이 (공격길이)
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+		float AttackRadius;//공격 감지 구의 반지름(공격 범위)
 
 	UPROPERTY()
 		class UMyAnimInstance* MyAnim; //캐릭터클래스에서 애님 인스턴스는 자주 사용하므로 멤버변수로 선언한다.

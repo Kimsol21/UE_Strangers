@@ -7,6 +7,7 @@ UMyAnimInstance::UMyAnimInstance()
 {
 	CurrentPawnSpeed = 0.0f;
 	IsInAir = false;
+	IsDead = false;
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> ATTACK_MONTAGE(TEXT("AnimMontage'/Game/Animations/Kwang_Skeleton_Montage.Kwang_Skeleton_Montage'"));
 	if (ATTACK_MONTAGE.Succeeded())
 	{
@@ -19,24 +20,31 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
 	auto Pawn = TryGetPawnOwner();
-	if (::IsValid(Pawn))
+	if (!::IsValid(Pawn)) return;
+
+
+	if (!IsDead)
 	{
-		CurrentPawnSpeed = Pawn->GetVelocity().Size();
+		CurrentPawnSpeed = Pawn->GetVelocity().Size(); //캐릭터 속도 판별.
 		auto Character = Cast<ACharacter>(Pawn);
 		if (Character)
 		{
-			IsInAir = Character->GetMovementComponent()->IsFalling();
+			IsInAir = Character->GetMovementComponent()->IsFalling(); //캐릭터가 공중에 떠있는지 판별.
 		}
 	}
 }
 
 void UMyAnimInstance::PlayAttackMontage()
 {
+	if (IsDead) return;
+
 	Montage_Play(AttackMontage, 1.0f);//AnimInstance가 제공하는 함수. 인자:플레이할 몽타주, 재생속도
 }
 
 void UMyAnimInstance::JumpToAttackMontageSection(int32 NewSection)
 {
+	if (IsDead) return;
+
 	if (Montage_IsPlaying(AttackMontage))
 	{
 		Montage_JumpToSection(GetAttackMontageSectionName(NewSection), AttackMontage); //인자로 받은 콤보를 섹션FName으로 변환해 AttackMontage의 해당 섹션을 재생.
