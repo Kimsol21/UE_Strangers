@@ -3,7 +3,11 @@
 
 #include "MyCharacter.h"
 #include "MyAnimInstance.h"
+#include "MyWeapon.h"
+#include "MyCharacterStatComponent.h"
 #include "DrawDebugHelpers.h"
+
+
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -14,6 +18,7 @@ AMyCharacter::AMyCharacter()
 	//언리얼 오브젝트 생성 및 세부사항 설정.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRINGARM"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CAMERA"));
+	CharacterStat = CreateDefaultSubobject<UMyCharacterStatComponent>(TEXT("CHARACTERSTAT"));
 
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	Camera->SetupAttachment(SpringArm);
@@ -59,8 +64,12 @@ AMyCharacter::AMyCharacter()
 	AttackRange = 200.0f; //구가 지나갈 길이.
 	AttackRadius = 50.0f;//구 반지름.
 
+	//미세전진 관련
 	bCanAttackSmallMove = false;
 	ExpectedAttackLocation = FVector::ZeroVector;
+
+
+
 
 }
 
@@ -73,7 +82,31 @@ void AMyCharacter::BeginPlay()
 	{
 		GetController()->SetControlRotation(FRotator(-15.0f, 0.0f, 0.0f)); //컨트롤 회전 기본값 지정.
 	}
+
+	//제작한 무기 클래스 캐릭터에 부착.
+	FName WeaponSocket(TEXT("FX_weapon_base"));
+	auto CurWeapon = GetWorld()->SpawnActor<AMyWeapon>(FVector::ZeroVector, FRotator::ZeroRotator);
+	if (nullptr != CurWeapon)
+	{
+		SetWeapon(CurWeapon);
+	}
 	
+}
+
+bool AMyCharacter::HasAnyWeapon()
+{
+	return (nullptr != CurrentWeapon); //캐릭터에 무기가 있는지 판단 -> 없으면 true 반환
+}
+
+void AMyCharacter::SetWeapon(AMyWeapon* NewWeapon) //캐릭터에 무기 장착하는 함수
+{
+	if (nullptr != NewWeapon )
+	{
+		FName WeaponSocket(TEXT("FX_weapon_base"));
+		NewWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocket);
+		NewWeapon->SetOwner(this);
+		CurrentWeapon = NewWeapon;
+	}
 }
 
 
@@ -88,6 +121,7 @@ void AMyCharacter::Tick(float DeltaTime)
 		SpringArm->TargetArmLength = FMath::Lerp(SpringArm->TargetArmLength, ExpectedSpringArmLength, 0.05f);
 	}
 
+	//미세전진 선형보간
 	if (bCanAttackSmallMove)
 	{			
 		if (FMath::Abs(ExpectedAttackLocation.X - GetActorLocation().X) > 0.1)
@@ -128,6 +162,12 @@ void AMyCharacter::PostInitializeComponents()
 	
 	MyAnim->OnAttackHitCheck.AddUObject(this, &AMyCharacter::AttackCheck); //MyAnim에서 만든 델리게이트에 MyCharacter함수 바인딩.
 
+	//HP가 Zero일때 관련 람다함수 선언, 바인딩.
+	CharacterStat->OnHPIsZero.AddLambda([this]() ->void {
+		MyAnim->SetDeadAnim();
+		SetActorEnableCollision(false);
+		});
+
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -137,11 +177,7 @@ float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 	UE_LOG(LogTemp, Warning, TEXT("Actor : %s took Damage : %f"), *GetName(), FinalDamage);
 
-	if (FinalDamage > 0.0f)
-	{
-		MyAnim->SetDeadAnim();//죽는애니메이션 재생.
-		SetActorEnableCollision(false); //죽으면 충돌이벤트 발생안하게.
-	}
+	CharacterStat->SetDamage(FinalDamage);
 
 	return FinalDamage;
 }
@@ -163,6 +199,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 
 }
+
 
 void AMyCharacter::UpDown(float NewAxisValue)
 {
@@ -224,7 +261,7 @@ void AMyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted
 void AMyCharacter::AttackStartComboState()
 {
 	bCanAttackSmallMove = true; //미세전진 가능
-	ExpectedAttackLocation = GetActorLocation() + GetActorForwardVector() * 50.0f;//전진시킬 목표위치 지정.
+	ExpectedAttackLocation = GetActorLocation() + GetActorForwardVector() * 40.0f;//전진시킬 목표위치 지정.
 
 	bCanNextCombo = true;
 	bIsComboInputOn = false;
@@ -286,7 +323,7 @@ void AMyCharacter::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
 		{
 			UE_LOG(LogTemp, Error, TEXT("Hit Actor Name : %s"), *HitResult.Actor->GetName());
 			FDamageEvent DamageEvent;
-			HitResult.Actor->TakeDamage(50.0f, DamageEvent, GetController(), this);//AActor에서 제공하는 함수. (전달할 데미지 세기, 데미지종류, 가해자, 직접피해를입힌 Actor)
+			HitResult.Actor->TakeDamage(CharacterStat->GetAttackPower(), DamageEvent, GetController(), this);//AActor에서 제공하는 함수. (전달할 데미지 세기, 데미지종류, 가해자, 직접피해를입힌 Actor)
 		}
 	}
 }

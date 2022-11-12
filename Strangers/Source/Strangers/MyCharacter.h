@@ -32,6 +32,15 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	bool HasAnyWeapon();
+	void SetWeapon(class AMyWeapon* NewWeapon);
+
+	UPROPERTY(VisibleAnywhere, Category = Weapon)
+	class AMyWeapon* CurrentWeapon;
+
+	UPROPERTY(VisibleAnywhere, Category = Stat)
+	class UMyCharacterStatComponent* CharacterStat;
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* SpringArm;
 
