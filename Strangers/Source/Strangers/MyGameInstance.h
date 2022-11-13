@@ -33,7 +33,7 @@ public :
 
 
 UCLASS()
-class STRANGERS_API UMyGameInstance : public UGameInstance
+class STRANGERS_API UMyGameInstance : public UGameInstance //게임 데이터 관리
 {
 	GENERATED_BODY()
 

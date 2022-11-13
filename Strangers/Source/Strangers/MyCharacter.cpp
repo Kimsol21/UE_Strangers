@@ -5,7 +5,9 @@
 #include "MyAnimInstance.h"
 #include "MyWeapon.h"
 #include "MyCharacterStatComponent.h"
-#include "DrawDebugHelpers.h"
+#include "DrawDebugHelpers.h" 
+#include "Components/WidgetComponent.h"
+#include "MyCharacterWidget.h"
 
 
 
@@ -19,9 +21,11 @@ AMyCharacter::AMyCharacter()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRINGARM"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CAMERA"));
 	CharacterStat = CreateDefaultSubobject<UMyCharacterStatComponent>(TEXT("CHARACTERSTAT"));
+	HPBarWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("HPBARWIDGET"));
 
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	Camera->SetupAttachment(SpringArm);
+	HPBarWidget->SetupAttachment(GetMesh());
 
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -88.0f), FRotator(0.0, -90.0f, 0.0f));
 
@@ -68,7 +72,15 @@ AMyCharacter::AMyCharacter()
 	bCanAttackSmallMove = false;
 	ExpectedAttackLocation = FVector::ZeroVector;
 
-
+	//위젯 컴포넌트 위치 조정 & 제작한 블루프린트 애셋의 클래스 정보를 위젯 컴포넌트의 widgetClass로 등록.
+	HPBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 200.0f));
+	HPBarWidget->SetWidgetSpace(EWidgetSpace::Screen);//항상 플레이어 바라보기.
+	static ConstructorHelpers::FClassFinder<UUserWidget> UI_HUD(TEXT("WidgetBlueprint'/Game/UI/UI_HPBar.UI_HPBar_C'"));
+	if (UI_HUD.Succeeded())
+	{
+		HPBarWidget->SetWidgetClass(UI_HUD.Class);
+		HPBarWidget->SetDrawSize(FVector2D(150.0f, 50.0f));
+	}
 
 
 }
@@ -91,6 +103,12 @@ void AMyCharacter::BeginPlay()
 		SetWeapon(CurWeapon);
 	}
 	
+	//캐릭터 위젯 받아오기.
+	auto CharacterWidget = Cast<UMyCharacterWidget>(HPBarWidget->GetUserWidgetObject());
+	if (nullptr != CharacterWidget)
+	{
+		CharacterWidget->BindCharacterStat(CharacterStat);
+	}
 }
 
 bool AMyCharacter::HasAnyWeapon()
@@ -115,6 +133,10 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	//선형보간 수정해야 할 것 
+	// 1. 매우 작은수에 도달하면 목표값으로 바로 가도록 하기.
+	// 2. 미세전진 점프공격 관련 버그 수정.
+
 	//줌 선형보간
 	if (FMath::Abs(SpringArm->TargetArmLength - ExpectedSpringArmLength) > KINDA_SMALL_NUMBER)
 	{
@@ -168,12 +190,12 @@ void AMyCharacter::PostInitializeComponents()
 		SetActorEnableCollision(false);
 		});
 
+	
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser); 
-
 
 	UE_LOG(LogTemp, Warning, TEXT("Actor : %s took Damage : %f"), *GetName(), FinalDamage);
 
