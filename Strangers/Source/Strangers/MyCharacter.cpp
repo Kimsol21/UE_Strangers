@@ -58,6 +58,7 @@ AMyCharacter::AMyCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
 
 	GetCharacterMovement()->JumpZVelocity = 800.0f; //점프 높이 지정
+	AttackMoveImpulse = 1000.0f;//공격전진 세기 초기화.
 	bIsAttacking = false;//공격중이 아님으로 초기화.
 	MaxCombo = 4; //최대 콤보 지정.
 	AttackEndComboState(); //기타 AttackCombo관련 초기값 지정.
@@ -67,10 +68,6 @@ AMyCharacter::AMyCharacter()
 	//공격범위 관련
 	AttackRange = 200.0f; //구가 지나갈 길이.
 	AttackRadius = 50.0f;//구 반지름.
-
-	//미세전진 관련
-	bCanAttackSmallMove = false;
-	ExpectedAttackLocation = FVector::ZeroVector;
 
 	//위젯 컴포넌트 위치 조정 & 제작한 블루프린트 애셋의 클래스 정보를 위젯 컴포넌트의 widgetClass로 등록.
 	HPBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 200.0f));
@@ -143,20 +140,6 @@ void AMyCharacter::Tick(float DeltaTime)
 		SpringArm->TargetArmLength = FMath::Lerp(SpringArm->TargetArmLength, ExpectedSpringArmLength, 0.05f);
 	}
 
-	//미세전진 선형보간
-	if (bCanAttackSmallMove)
-	{			
-		if (FMath::Abs(ExpectedAttackLocation.X - GetActorLocation().X) > 0.1)
-		{
-			FVector temp = FMath::Lerp(GetActorLocation(), ExpectedAttackLocation, 0.05f);
-			SetActorLocation(temp);			
-		}
-		else
-		{
-			bCanAttackSmallMove = false;
-			ExpectedAttackLocation = FVector::ZeroVector;
-		}
-	}
 }
 
 void AMyCharacter::PostInitializeComponents()
@@ -218,8 +201,6 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction(TEXT("Attack"), EInputEvent::IE_Pressed, this, &AMyCharacter::Attack);
 	PlayerInputComponent->BindAction(TEXT("ZoomIn"), EInputEvent::IE_Pressed, this, &AMyCharacter::ZoomIn);
 	PlayerInputComponent->BindAction(TEXT("ZoomOut"), EInputEvent::IE_Pressed, this, &AMyCharacter::ZoomOut);
-
-
 }
 
 
@@ -258,18 +239,19 @@ void AMyCharacter::ZoomOut()
 
 void AMyCharacter::Attack()
 {
-	if (bIsAttacking)//현재 공격중이면,
+	if (bIsAttacking)//원래 공격중인 상태였으면,
 	{
 		if(bCanNextCombo) //다음콤보를 실행할 수 있다면
 		{
-			bIsComboInputOn = true; //콤보인풋 입력여부를 true로 바꿔준다.
+			bIsComboInputOn = true; //콤보인풋 입력여부를 true로 바꿔준다. OnAttackCheck 노티파이 발생시 AttackStartComboState함수 출력, (델리게이트)
 		}
 	}
-	else//현재 공격중이 아니면,
+	else//공격중인 상태가 아니었다면,
 	{
 		AttackStartComboState();//다음 콤보로 진행가능하게 하고, 콤보+1해주는 함수
 		MyAnim->PlayAttackMontage(); //공격 몽타주 재생.
 		MyAnim->JumpToAttackMontageSection(CurrentCombo);//Current콤보의 몽타주 섹션 재생.
+		
 		bIsAttacking = true;//공격중임을 알림.
 	}
 }
@@ -282,8 +264,7 @@ void AMyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted
 
 void AMyCharacter::AttackStartComboState()
 {
-	bCanAttackSmallMove = true; //미세전진 가능
-	ExpectedAttackLocation = GetActorLocation() + GetActorForwardVector() * 40.0f;//전진시킬 목표위치 지정.
+	this->GetCharacterMovement()->AddImpulse(GetActorForwardVector() * AttackMoveImpulse, true); //공격 시 미세전진
 
 	bCanNextCombo = true;
 	bIsComboInputOn = false;

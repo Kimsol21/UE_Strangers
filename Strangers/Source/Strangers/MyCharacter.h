@@ -72,10 +72,7 @@ private:
 		float ExpectedSpringArmLength; //스프링암 길이 목표값.
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
-		bool bCanAttackSmallMove; //공격미세이동여부.
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
-		FVector ExpectedAttackLocation; //공격미세이동목표값.
+		float AttackMoveImpulse;//미세전진에 가할 힘
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
 		bool bIsAttacking;//현재 공격중인지 판단.
