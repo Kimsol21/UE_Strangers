@@ -8,6 +8,7 @@
 #include "DrawDebugHelpers.h" 
 #include "Components/WidgetComponent.h"
 #include "MyCharacterWidget.h"
+#include "MyAIController.h"
 
 
 
@@ -79,7 +80,9 @@ AMyCharacter::AMyCharacter()
 		HPBarWidget->SetDrawSize(FVector2D(150.0f, 50.0f));
 	}
 
-
+	//AI 생성 옵션 설정 : 레벨에 배치하거나 새롭게 생성되는 MyCharacter객체마다 MyAIController액터 생성.
+	AIControllerClass = AMyAIController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
 // Called when the game starts or when spawned
@@ -187,6 +190,20 @@ float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	return FinalDamage;
 }
 
+void AMyCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (IsPlayerControlled())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 600.0f;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 300.0f;
+	}
+}
+
 // Called to bind functionality to input
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -260,6 +277,7 @@ void AMyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted
 {
 	bIsAttacking = false;//공격이 끝났음을 알림.
 	AttackEndComboState();//콤보 초기화, 변수초기화.
+	OnAttackEnd.Broadcast();
 }
 
 void AMyCharacter::AttackStartComboState()
