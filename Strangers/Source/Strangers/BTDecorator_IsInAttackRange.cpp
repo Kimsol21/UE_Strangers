@@ -3,7 +3,7 @@
 
 #include "BTDecorator_IsInAttackRange.h"
 #include "MyAIController.h"
-#include "MyCharacter.h"
+#include "MyPlayer.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTDecorator_IsInAttackRange::UBTDecorator_IsInAttackRange()
@@ -19,7 +19,7 @@ bool UBTDecorator_IsInAttackRange::CalculateRawConditionValue(UBehaviorTreeCompo
 	if (nullptr == ControllingPawn)
 		return false;
 
-	auto Target = Cast<AMyCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AMyAIController::TargetKey));
+	auto Target = Cast<AMyPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AMyAIController::TargetKey));
 	if (nullptr == Target)
 		return false;
 

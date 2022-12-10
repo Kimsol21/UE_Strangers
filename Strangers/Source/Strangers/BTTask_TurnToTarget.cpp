@@ -3,7 +3,8 @@
 
 #include "BTTask_TurnToTarget.h"
 #include "MyAIController.h"
-#include "MyCharacter.h"
+#include "MyPlayer.h"
+#include "MyMonster.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTTask_TurnToTarget::UBTTask_TurnToTarget()
@@ -15,18 +16,18 @@ EBTNodeResult::Type UBTTask_TurnToTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 {
 	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
-	auto MyCharacter = Cast<AMyCharacter>(OwnerComp.GetAIOwner()->GetPawn());
-	if (nullptr == MyCharacter)
+	auto MyMonster = Cast<AMyMonster>(OwnerComp.GetAIOwner()->GetPawn());
+	if (nullptr == MyMonster)
 		return EBTNodeResult::Failed;
 
-	auto Target = Cast<AMyCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AMyAIController::TargetKey));
+	auto Target = Cast<AMyPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AMyAIController::TargetKey));
 	if (nullptr == Target)
 		return EBTNodeResult::Failed;
 
-	FVector LookVector = Target->GetActorLocation() - MyCharacter->GetActorLocation();
+	FVector LookVector = Target->GetActorLocation() - MyMonster->GetActorLocation();
 	LookVector.Z = 0.0f;
 	FRotator TargetRot = FRotationMatrix::MakeFromX(LookVector).Rotator();
-	MyCharacter->SetActorRotation(FMath::RInterpTo(MyCharacter->GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 2.0f));
+	MyMonster->SetActorRotation(FMath::RInterpTo(MyMonster->GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 2.0f));
 
 	return EBTNodeResult::Succeeded;
 }

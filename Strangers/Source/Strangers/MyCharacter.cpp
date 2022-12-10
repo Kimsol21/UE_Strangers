@@ -3,11 +3,92 @@
 
 #include "MyCharacter.h"
 #include "MyAnimInstance.h"
+#include "MyCharacterStatComponent.h"
+#include "DrawDebugHelpers.h" 
+
+
+// Sets default values
+AMyCharacter::AMyCharacter()
+{
+	//공격범위 관련
+	AttackRange = 200.0f; //구가 지나갈 길이.
+	AttackRadius = 50.0f;//구 반지름.
+}
+
+float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	UE_LOG(LogTemp, Warning, TEXT("Actor : %s took Damage : %f"), *GetName(), FinalDamage);
+
+	//CharacterStat->SetDamage(FinalDamage);
+
+	return FinalDamage;
+}
+
+void AMyCharacter::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
+{
+	
+
+	FHitResult HitResult; //충돌경우 관련 정보 담을 구조체.
+	FName temp = NAME_None;
+	FCollisionQueryParams Params(NAME_None, false, this);//탐색 방법에 대한 설정 값을 모아둔 구조체.
+	/*
+	* 첫번째 인자 (TraceTag) : Trace 디버깅을 위한 추가 정보 또는 필터링을 제공하는 데 사용되는 태그(예: Collision Analyzer)
+	* 두번째 인자 (bTraceComplex) : 복잡한 충돌에 대해 추적해야 하는지 여부.
+	* 세번째 인자 (IgnoreActor) : Trace하는 동안 무시해야 하는 엑터.
+	*/
+
+	bool bResult = GetWorld()->SweepSingleByChannel( //트레이스 체널을 사용해 물리적 충돌여부를 가리는 함수.
+		HitResult,
+		GetActorLocation(),//탐색시작위치.
+		GetActorLocation() + GetActorForwardVector() * AttackRange,//탐색 종료 위치.
+		FQuat::Identity,//탐색에 사용할 도형의 회전.
+		ECollisionChannel::ECC_GameTraceChannel2,//물리 충돌 감지에 사용할 트레이스 채널 정보.
+		FCollisionShape::MakeSphere(AttackRadius),//탐색에 사용할 기본 도형 정보.(구체,캡슐,박스 등)
+		Params
+	);
+
+#if ENABLE_DRAW_DEBUG
+	FVector TraceVec = GetActorForwardVector() * AttackRange;
+	FVector Center = GetActorLocation() + TraceVec * 0.5f;
+	float HalfHeight = AttackRange * 0.5f + AttackRadius;
+	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();//캡슐의 Z벡터를 캐릭터 시선방향으로 회전.
+	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+	float DebugLifeTime = 5.0f;
+
+	DrawDebugCapsule //DrawDebugHelpers에서 제공하는 캡슐그리기 함수.
+	(
+		GetWorld(),//그릴월드
+		Center,//위치
+		HalfHeight,//캡슐길이
+		AttackRadius,//반지름
+		CapsuleRot,//캡슐회전
+		DrawColor, //색깔
+		false,//지속여부
+		DebugLifeTime //지속시간
+	);
+#endif
+
+	if (bResult)//충돌이 감지되면
+	{
+		if (HitResult.Actor.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Hit Actor Name : %s"), *HitResult.Actor->GetName());
+			FDamageEvent DamageEvent;
+			//HitResult.Actor->TakeDamage(CharacterStat->GetAttackPower(), DamageEvent, GetController(), this);//AActor에서 제공하는 함수. (전달할 데미지 세기, 데미지종류, 가해자, 직접피해를입힌 Actor)
+			HitResult.Actor->TakeDamage(1.0f, DamageEvent, GetController(), this);//AActor에서 제공하는 함수. (전달할 데미지 세기, 데미지종류, 가해자, 직접피해를입힌 Actor)
+		}
+	}
+}
+
+/*#include "MyCharacter.h"
+#include "MyAnimInstance.h"
 #include "MyWeapon.h"
 #include "MyCharacterStatComponent.h"
 #include "DrawDebugHelpers.h" 
 #include "Components/WidgetComponent.h"
-#include "MyCharacterWidget.h"
+#include "MyMonsterWidget.h"
 #include "MyAIController.h"
 
 
@@ -15,6 +96,7 @@
 // Sets default values
 AMyCharacter::AMyCharacter()
 {
+	/*
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -22,11 +104,11 @@ AMyCharacter::AMyCharacter()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRINGARM"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CAMERA"));
 	CharacterStat = CreateDefaultSubobject<UMyCharacterStatComponent>(TEXT("CHARACTERSTAT"));
-	HPBarWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("HPBARWIDGET"));
+	//HPBarWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("HPBARWIDGET"));
 
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	Camera->SetupAttachment(SpringArm);
-	HPBarWidget->SetupAttachment(GetMesh());
+	//HPBarWidget->SetupAttachment(GetMesh());
 
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -88.0f), FRotator(0.0, -90.0f, 0.0f));
 
@@ -79,17 +161,21 @@ AMyCharacter::AMyCharacter()
 		HPBarWidget->SetWidgetClass(UI_HUD.Class);
 		HPBarWidget->SetDrawSize(FVector2D(150.0f, 50.0f));
 	}
-
+	
 	//AI 생성 옵션 설정 : 레벨에 배치하거나 새롭게 생성되는 MyCharacter객체마다 MyAIController액터 생성.
 	AIControllerClass = AMyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	
+	//공격범위 관련
+AttackRange = 200.0f; //구가 지나갈 길이.
+AttackRadius = 50.0f;//구 반지름.
 }
 
 // Called when the game starts or when spawned
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (GetController())
 	{
 		GetController()->SetControlRotation(FRotator(-15.0f, 0.0f, 0.0f)); //컨트롤 회전 기본값 지정.
@@ -102,13 +188,14 @@ void AMyCharacter::BeginPlay()
 	{
 		SetWeapon(CurWeapon);
 	}
-	
+
 	//캐릭터 위젯 받아오기.
-	auto CharacterWidget = Cast<UMyCharacterWidget>(HPBarWidget->GetUserWidgetObject());
+	/*auto CharacterWidget = Cast<UMyMonsterWidget>(HPBarWidget->GetUserWidgetObject());
 	if (nullptr != CharacterWidget)
 	{
 		CharacterWidget->BindCharacterStat(CharacterStat);
 	}
+	
 }
 
 bool AMyCharacter::HasAnyWeapon()
@@ -118,7 +205,7 @@ bool AMyCharacter::HasAnyWeapon()
 
 void AMyCharacter::SetWeapon(AMyWeapon* NewWeapon) //캐릭터에 무기 장착하는 함수
 {
-	if (nullptr != NewWeapon )
+	if (nullptr != NewWeapon)
 	{
 		FName WeaponSocket(TEXT("FX_weapon_base"));
 		NewWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocket);
@@ -132,15 +219,27 @@ void AMyCharacter::SetWeapon(AMyWeapon* NewWeapon) //캐릭터에 무기 장착하는 함수
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	//선형보간 수정해야 할 것 
-	// 1. 매우 작은수에 도달하면 목표값으로 바로 가도록 하기.
+
 	// 2. 미세전진 점프공격 관련 버그 수정.
 
 	//줌 선형보간
-	if (FMath::Abs(SpringArm->TargetArmLength - ExpectedSpringArmLength) > KINDA_SMALL_NUMBER)
+	if (bCanZoom)
 	{
-		SpringArm->TargetArmLength = FMath::Lerp(SpringArm->TargetArmLength, ExpectedSpringArmLength, 0.05f);
+		if (FMath::Abs(SpringArm->TargetArmLength - ExpectedSpringArmLength) > KINDA_SMALL_NUMBER)
+		{
+			SpringArm->TargetArmLength = FMath::Lerp(SpringArm->TargetArmLength, ExpectedSpringArmLength, 0.05f);
+		}
+		else
+		{
+			SpringArm->TargetArmLength = ExpectedSpringArmLength;
+			bCanZoom = false;
+		}
+	}
+
+	//미세전진
+	if (bCanAttackMove)
+	{
+		GetCharacterMovement()->MoveSmooth(GetActorForwardVector(), 2.0f);
 	}
 
 }
@@ -153,6 +252,7 @@ void AMyCharacter::PostInitializeComponents()
 	if (nullptr == MyAnim)
 	{
 		UE_LOG(LogTemp, Error, TEXT("MyAnim is null!"));
+		return;
 	}
 	MyAnim->OnMontageEnded.AddDynamic(this, &AMyCharacter::OnAttackMontageEnded); //AnimInstance의 델리게이트 OnMontageEnded에 My함수 바인딩.
 
@@ -167,21 +267,21 @@ void AMyCharacter::PostInitializeComponents()
 			MyAnim->JumpToAttackMontageSection(CurrentCombo);//다음 콤보의 몽타주섹션 재생.
 		}
 		});
-	
+
 	MyAnim->OnAttackHitCheck.AddUObject(this, &AMyCharacter::AttackCheck); //MyAnim에서 만든 델리게이트에 MyCharacter함수 바인딩.
 
-	//HP가 Zero일때 관련 람다함수 선언, 바인딩.
+	//HP가 Zero일때 관련 람다함수 선언, 바인딩. 김솔
 	CharacterStat->OnHPIsZero.AddLambda([this]() ->void {
 		MyAnim->SetDeadAnim();
 		SetActorEnableCollision(false);
 		});
 
-	
+
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser); 
+	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	UE_LOG(LogTemp, Warning, TEXT("Actor : %s took Damage : %f"), *GetName(), FinalDamage);
 
@@ -204,22 +304,6 @@ void AMyCharacter::PossessedBy(AController* NewController)
 	}
 }
 
-// Called to bind functionality to input
-void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	// 설정한 입력 세팅을 Pawn의 함수와 Binding시키기.
-	PlayerInputComponent->BindAxis(TEXT("UpDown"), this, &AMyCharacter::UpDown); //TEXT 안의 값은 입력 세팅의 이름이다.
-	PlayerInputComponent->BindAxis(TEXT("LeftRight"), this, &AMyCharacter::LeftRight);
-	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &AMyCharacter::LookUp);
-	PlayerInputComponent->BindAxis(TEXT("Turn"), this, &AMyCharacter::Turn);
-	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACharacter::Jump);//캐릭터 무브먼트 컴포넌트에 내장되어있다.
-	PlayerInputComponent->BindAction(TEXT("Attack"), EInputEvent::IE_Pressed, this, &AMyCharacter::Attack);
-	PlayerInputComponent->BindAction(TEXT("ZoomIn"), EInputEvent::IE_Pressed, this, &AMyCharacter::ZoomIn);
-	PlayerInputComponent->BindAction(TEXT("ZoomOut"), EInputEvent::IE_Pressed, this, &AMyCharacter::ZoomOut);
-}
-
 
 void AMyCharacter::UpDown(float NewAxisValue)
 {
@@ -234,9 +318,9 @@ void AMyCharacter::LeftRight(float NewAxisValue) //-1,1
 
 	AddMovementInput(FRotationMatrix(FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::Y), NewAxisValue);//좌우로 폰이동.
 }
- void AMyCharacter::LookUp(float NewAxisValue)
+void AMyCharacter::LookUp(float NewAxisValue)
 {
-	AddControllerPitchInput(NewAxisValue); 
+	AddControllerPitchInput(NewAxisValue);
 }
 
 void AMyCharacter::Turn(float NewAxisValue)
@@ -246,11 +330,13 @@ void AMyCharacter::Turn(float NewAxisValue)
 
 void AMyCharacter::ZoomIn()
 {
+	bCanZoom = true;
 	ExpectedSpringArmLength = FMath::Clamp<float>(ExpectedSpringArmLength - 150.0f, 200.0f, 800.0f);
 }
 
 void AMyCharacter::ZoomOut()
 {
+	bCanZoom = true;
 	ExpectedSpringArmLength = FMath::Clamp<float>(ExpectedSpringArmLength + 150.0f, 200.0f, 800.0f);
 }
 
@@ -258,7 +344,7 @@ void AMyCharacter::Attack()
 {
 	if (bIsAttacking)//원래 공격중인 상태였으면,
 	{
-		if(bCanNextCombo) //다음콤보를 실행할 수 있다면
+		if (bCanNextCombo) //다음콤보를 실행할 수 있다면
 		{
 			bIsComboInputOn = true; //콤보인풋 입력여부를 true로 바꿔준다. OnAttackCheck 노티파이 발생시 AttackStartComboState함수 출력, (델리게이트)
 		}
@@ -268,12 +354,12 @@ void AMyCharacter::Attack()
 		AttackStartComboState();//다음 콤보로 진행가능하게 하고, 콤보+1해주는 함수
 		MyAnim->PlayAttackMontage(); //공격 몽타주 재생.
 		MyAnim->JumpToAttackMontageSection(CurrentCombo);//Current콤보의 몽타주 섹션 재생.
-		
+
 		bIsAttacking = true;//공격중임을 알림.
 	}
 }
 
-void AMyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)//AnimInstance에서 제공하는 OnMontageEnded델리게이트에 바인딩된 함수.
+void AMyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)//UAnimInstance에서 제공하는 OnMontageEnded델리게이트에 바인딩된 함수.
 {
 	bIsAttacking = false;//공격이 끝났음을 알림.
 	AttackEndComboState();//콤보 초기화, 변수초기화.
@@ -282,7 +368,7 @@ void AMyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted
 
 void AMyCharacter::AttackStartComboState()
 {
-	this->GetCharacterMovement()->AddImpulse(GetActorForwardVector() * AttackMoveImpulse, true); //공격 시 미세전진
+	bCanAttackMove = true;//미세전진
 
 	bCanNextCombo = true;
 	bIsComboInputOn = false;
@@ -298,14 +384,16 @@ void AMyCharacter::AttackEndComboState()
 
 void AMyCharacter::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
 {
+	bCanAttackMove = false;//미세전진 중지
+
 	FHitResult HitResult; //충돌경우 관련 정보 담을 구조체.
-	FName temp = NAME_None; 
+	FName temp = NAME_None;
 	FCollisionQueryParams Params(NAME_None, false, this);//탐색 방법에 대한 설정 값을 모아둔 구조체.
 	/*
 	* 첫번째 인자 (TraceTag) : Trace 디버깅을 위한 추가 정보 또는 필터링을 제공하는 데 사용되는 태그(예: Collision Analyzer)
 	* 두번째 인자 (bTraceComplex) : 복잡한 충돌에 대해 추적해야 하는지 여부.
 	* 세번째 인자 (IgnoreActor) : Trace하는 동안 무시해야 하는 엑터.
-	*/
+	
 
 	bool bResult = GetWorld()->SweepSingleByChannel( //트레이스 체널을 사용해 물리적 충돌여부를 가리는 함수.
 		HitResult,
@@ -348,5 +436,5 @@ void AMyCharacter::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
 		}
 	}
 }
-
+*/
 

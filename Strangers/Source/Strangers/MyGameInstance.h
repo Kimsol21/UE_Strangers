@@ -10,7 +10,7 @@
 /**
  * 
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType) //플레이어 데이터 구조체
 struct FMyCharacterData : public FTableRowBase
 {
 	GENERATED_BODY()
@@ -31,6 +31,31 @@ public :
 	int32 NextExp;
 };
 
+USTRUCT(BlueprintType) //몬스터 데이터 구조체
+struct FMyMonsterData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+public :
+	FMyMonsterData() : ID(1), Name(TEXT("Corpse")), AttackPower(1.0f), MoveSpeed(300.0f), MaxHP(30.0f) {}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	int32 ID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	FString Name;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float AttackPower;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float MoveSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float MaxHP;
+
+};
+
 
 UCLASS()
 class STRANGERS_API UMyGameInstance : public UGameInstance //게임 데이터 관리
@@ -40,10 +65,14 @@ class STRANGERS_API UMyGameInstance : public UGameInstance //게임 데이터 관리
 public:
 	UMyGameInstance();
 
-	virtual void Init() override;
 	FMyCharacterData* GetMyCharacterData(int32 Level);
+	FMyMonsterData* GetMyMonsterData(int32 ID);
 
 private:
+
 	UPROPERTY()
-		class UDataTable* MyCharacterTable;
+	class UDataTable* MyCharacterTable;
+
+	UPROPERTY()
+	class UDataTable* MyMonsterTable;
 };

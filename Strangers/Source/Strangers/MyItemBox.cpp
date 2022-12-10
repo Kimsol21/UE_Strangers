@@ -3,7 +3,7 @@
 
 #include "MyItemBox.h"
 #include "MyWeapon.h"
-#include "MyCharacter.h"
+#include "MyPlayer.h"
 
 
 // Sets default values
@@ -68,16 +68,16 @@ void AMyItemBox::PostInitializeComponents()
 
 void AMyItemBox::OnCharacterOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	auto MyCharacter = Cast<AMyCharacter>(OtherActor);
+	auto MyPlayer = Cast<AMyPlayer>(OtherActor);
 
-	if (nullptr != MyCharacter && nullptr != WeaponItemClass)
+	if (nullptr != MyPlayer && nullptr != WeaponItemClass)
 	{
-		if (MyCharacter->HasAnyWeapon())
+		if (MyPlayer->HasAnyWeapon())
 		{
-			MyCharacter->CurrentWeapon->Destroy();			
+			MyPlayer->CurrentWeapon->Destroy();
 		}
 		auto NewWeapon = GetWorld()->SpawnActor<AMyWeapon>(WeaponItemClass, FVector::ZeroVector, FRotator::ZeroRotator); //무기액터 월드에 소환후
-		MyCharacter->SetWeapon(NewWeapon); //캐릭터에 장착
+		MyPlayer->SetWeapon(NewWeapon); //캐릭터에 장착
 
 		Effect->Activate(true); //파티클 재생
 		SetActorEnableCollision(false); //더이상 아이템 획득 못하도록 콜리전 봉인

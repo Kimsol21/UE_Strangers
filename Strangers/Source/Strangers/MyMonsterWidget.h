@@ -4,25 +4,25 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "MyCharacterWidget.generated.h"
+#include "MyMonsterWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class STRANGERS_API UMyCharacterWidget : public UUserWidget
+class STRANGERS_API UMyMonsterWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
 public:
-	void BindCharacterStat(class UMyCharacterStatComponent* NewCharacterStat);
+	void BindCharacterStat(class UMyMonsterStatComponent* NewMonsterStat);
 
 protected:
 	virtual void NativeConstruct() override;
 	void UpdateHPWidget();
 
 private:
-	TWeakObjectPtr<class UMyCharacterStatComponent> CurrentCharacterStat; //약포인터 사용
+	TWeakObjectPtr<class UMyMonsterStatComponent> CurrentMonsterStat; //약포인터 사용
 
 	UPROPERTY()
 	class UProgressBar* HPProgressBar;

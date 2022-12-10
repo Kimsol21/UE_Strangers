@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "MyPlayer.h"
 #include "MyPlayerController.generated.h"
 
 /**
@@ -16,5 +17,18 @@ class STRANGERS_API AMyPlayerController : public APlayerController
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+	
+private:
+	AMyPlayer* possessedPawn;
+
+	void CallUpDown(float NewAxisValue);
+	void CallLeftRight(float NewAxisValue);
+	void CallLookUp(float NewAxisValue);
+	void CallTurn(float NewAxisValue);
+	void CallZoomIn();
+	void CallZoomOut();
+	void CallJump();
+	void CallAttack();
 
 };

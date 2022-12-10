@@ -3,7 +3,7 @@
 
 #include "BTService_Detect.h"
 #include "MyAIController.h"
-#include "MyCharacter.h"
+#include "MyPlayer.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "DrawDebugHelpers.h"
 
@@ -27,7 +27,7 @@ void UBTService_Detect::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	if (nullptr == World) return;
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionQueryParams CollisionQueryParam(NAME_None, false, ControllingPawn);
-	bool bResult = World->OverlapMultiByChannel(//반경 이내에 캐릭터가 있는지 감지.
+	bool bResult = World->OverlapMultiByChannel(//반경 이내에 플레이어가 있는지 감지.
 		OverlapResults,
 		Center,
 		FQuat::Identity,
@@ -45,12 +45,12 @@ void UBTService_Detect::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 		
 		for (auto const& OverlapResult : OverlapResults)
 		{
-			AMyCharacter* MyCharacter = Cast<AMyCharacter>(OverlapResult.GetActor());
-			if (MyCharacter && MyCharacter->GetController()->IsPlayerController())
+			AMyPlayer* MyPlayer = Cast<AMyPlayer>(OverlapResult.GetActor());
+			if (MyPlayer)
 			{
-				OwnerComp.GetBlackboardComponent()->SetValueAsObject(AMyAIController::TargetKey, MyCharacter);
+				OwnerComp.GetBlackboardComponent()->SetValueAsObject(AMyAIController::TargetKey, MyPlayer);
 				DrawDebugSphere(World, Center, DetectRadius, 16, FColor::Green, false, 0.2f);
-				DrawDebugLine(World, ControllingPawn->GetActorLocation(), MyCharacter->GetActorLocation(), FColor::Blue, false, 0.2f);
+				DrawDebugLine(World, ControllingPawn->GetActorLocation(), MyPlayer->GetActorLocation(), FColor::Blue, false, 0.2f);
 				return;
 			}
 		}
