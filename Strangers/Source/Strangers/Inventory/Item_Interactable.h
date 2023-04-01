@@ -25,7 +25,7 @@ public:
 		UStaticMeshComponent* ItemMesh;
 
 	//플레이어가 this에 인터렉트 할 시에 호출되는 함수.
-	void Interact(APlayerController* Controller);
+	void Interact(class AMyPlayerController* Controller);
 
 	bool SetItemData();
 
@@ -34,7 +34,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	int32 ID = 1;
 
-	struct FItemData* ItemDataTable;
+	struct FItemData* ItemData;
+	FItemData* GetItemData() const { return ItemData; };
 	
 
 	// ItemInfo 텍스트값 반환시켜주는 함수. UI블루프린트와 연동.

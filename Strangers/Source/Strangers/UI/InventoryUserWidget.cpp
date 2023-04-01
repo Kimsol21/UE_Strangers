@@ -2,10 +2,14 @@
 
 
 #include "UI/InventoryUserWidget.h"
+#include "Components/WrapBox.h"
+#include "UI/InventorySlotWidget.h"
 #include "Inventory/InventoryComponent.h"
+#include "Character/Player/MyPlayerController.h"
 
 
-void UInventoryUserWidget::BindInventory(class UInventoryComponent* NewInventoryComponent)
+
+void UInventoryUserWidget::BindInventory(UInventoryComponent* NewInventoryComponent)
 {
 	if (nullptr == NewInventoryComponent)
 	{
@@ -16,7 +20,28 @@ void UInventoryUserWidget::BindInventory(class UInventoryComponent* NewInventory
 	CurrentInventory->OnInventoryUpdate.AddUObject(this, &UInventoryUserWidget::UpdateInventoryUI); //델리게이트에 함수 바인딩.
 }
 
-void UInventoryUserWidget::UpdateInventoryUI()
+void UInventoryUserWidget::UpdateInventoryUI() 
+{ 
+}
+
+void UInventoryUserWidget::NativeConstruct()
 {
+	Super::NativeConstruct();
+	
+	AMyPlayerController* MyController = Cast<AMyPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (MyController)
+	{
+		NewInventorySlotWidget = MyController->GetInventorySlotWidget();
+	}
+	
+
+	//슬롯을 담을 변수를 UI 요소와 연결.
+	InventorySlotMotherUI = Cast<UWrapBox>(GetWidgetFromName(TEXT("WrapBox_InventorySlotMother"))); 
+	if (InventorySlotMotherUI)
+	{
+		InventorySlotMotherUI->AddChildToWrapBox(NewInventorySlotWidget);
+		InventorySlotMotherUI->AddChildToWrapBox(NewInventorySlotWidget);
+	}
 
 }
+

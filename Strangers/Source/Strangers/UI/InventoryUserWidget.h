@@ -6,22 +6,33 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryUserWidget.generated.h"
 
+class UInventoryComponent;
+class UInventorySlotWidget;
+class UWrapBox;
+
 /**
  * 
- */
+ */   
 UCLASS()
 class STRANGERS_API UInventoryUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
+
+
 public:
-	void BindInventory(class UInventoryComponent* NewInventoryComponent);
+	void BindInventory(UInventoryComponent* const NewInventoryComponent);
 	void UpdateInventoryUI();
+  
+protected:
+	virtual void NativeConstruct() override;
 
 private:
-	TWeakObjectPtr<class UInventoryComponent> CurrentInventory; //약포인터 사용
+	TWeakObjectPtr<UInventoryComponent> CurrentInventory; //약포인터 사용
 
-	//UPROPERTY()
-	//class UProgressBar* HPProgressBar;
+	UInventorySlotWidget* NewInventorySlotWidget; //추가할 인벤토리 슬롯.
+
+	UWrapBox* InventorySlotMotherUI; //실제 슬롯들을 담고 있는 WrapBox.
 
 };
+  

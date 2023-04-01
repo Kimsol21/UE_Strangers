@@ -6,7 +6,12 @@
 #include "UI/PlayerInfoUserWidget.h"
 #include "Character/Player/MyPlayer.h"
 #include "Inventory/Item_Interactable.h"
+#include "UI/InventoryUserWidget.h"
+#include "UI/InventorySlotWidget.h"
 
+FInputModeGameAndUI InputGameAndUI; //둘다에 입력값 전달.
+FInputModeUIOnly InputUIOnly; //UI에만 입력값 전달.
+FInputModeGameOnly InputGameOnly;//게임에만 입력값 전달.
 
 AMyPlayerController::AMyPlayerController()
 {
@@ -28,14 +33,26 @@ AMyPlayerController::AMyPlayerController()
 		ItemInfoClass = UI_ITEM_INFO.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UInventorySlotWidget> UI_INVENTORY_SLOT(TEXT("WidgetBlueprint'/Game/UI/Inventory/WG_InvenSlot.WG_InvenSlot_C'"));
+	if (UI_INVENTORY_SLOT.Succeeded())
+	{
+		InventorySlotWidgetClass = UI_INVENTORY_SLOT.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UInventoryUserWidget> UI_INVENTORY(TEXT("WidgetBlueprint'/Game/UI/Inventory/WG_Inventory.WG_Inventory_C'"));
+	if (UI_INVENTORY.Succeeded())
+	{
+		InventoryWidgetClass = UI_INVENTORY.Class;
+	}
+
 }
 
 void AMyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	FInputModeGameOnly InputMode;//게임에만 입력값 전달.
-	SetInputMode(InputMode);
+	
+	SetInputMode(InputGameOnly);
 
 	possessedPawn = Cast<AMyPlayer>(GetPawn()); //빙의된 폰 가져오기.
 
@@ -54,6 +71,17 @@ void AMyPlayerController::BeginPlay()
 	ItemInfoWidget = CreateWidget<UUserWidget>(this, ItemInfoClass);
 	ItemInfoWidget->AddToViewport();
 
+	//인벤토리 슬롯 위젯
+	InventorySlotWidget = CreateWidget<UInventorySlotWidget>(this, InventorySlotWidgetClass);
+
+	//인벤토리 위젯
+	InventoryWidget = CreateWidget<UInventoryUserWidget>(this, InventoryWidgetClass);
+	InventoryWidget->BindInventory(possessedPawn->GetMyInventoryComponent());
+	InventoryWidget->AddToViewport();
+	InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	
+
 	
 }
 
@@ -71,12 +99,29 @@ void AMyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("Attack"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallAttack);
 	InputComponent->BindAction(TEXT("ZoomIn"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallZoomIn);
 	InputComponent->BindAction(TEXT("ZoomOut"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallZoomOut);
-	InputComponent->BindAction(TEXT("Interact"), EInputEvent::IE_Pressed, this, &AMyPlayerController::Interact);
+	InputComponent->BindAction(TEXT("Interact"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInteract);
+	InputComponent->BindAction(TEXT("Inventory"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInventory);
+	InputComponent->BindAction(TEXT("Quit"), EInputEvent::IE_Pressed, this, &AMyPlayerController::PressX);
 
 }
 
-void AMyPlayerController::Interact()
+#pragma region InputBindFunctions
+
+void AMyPlayerController::CallInventory()
 {
+	if (InventoryWidget&&!InventoryWidget->IsVisible()) //InventoryWidget이 유효하고, 
+	{
+		AddPopup(*InventoryWidget);
+	}
+}
+
+void AMyPlayerController::PressX()
+{
+	RemoveCurrentPopup();
+}
+
+void AMyPlayerController::CallInteract()
+{  
 	if (CurrentInteractable)
 	{
 		CurrentInteractable->Interact(this);
@@ -137,12 +182,43 @@ void AMyPlayerController::CallJump()
 	{
 		possessedPawn->Jump();
 	}
-}
+} 
 
 void AMyPlayerController::CallAttack()
-{
+{ 
 	if (possessedPawn)
 	{
 		possessedPawn->Attack();
+	}
+}
+
+#pragma endregion
+
+
+void AMyPlayerController::AddPopup(UUserWidget& widget)
+{
+	PopupWidgetArray.Add(&widget); //팝업 위젯 배열에 위젯 추가. 
+	widget.SetVisibility(ESlateVisibility::Visible); //위젯 가시성 설정.
+
+	if (1 == PopupWidgetArray.Num())//첫 팝업이면,
+	{
+		SetInputMode(InputUIOnly);//인풋모드 UI Only로 변경.
+		SetShowMouseCursor(true); //마우스 커서 보여주기.
+	}
+}
+
+void AMyPlayerController::RemoveCurrentPopup()
+{
+	if (0 == PopupWidgetArray.Num()) return;//팝업이 화면상에 아무것도 없으면 리턴.
+	else
+	{
+		if (1 == PopupWidgetArray.Num())//마지막 팝업이면,
+		{
+			SetInputMode(InputGameOnly);//인풋모드 UI Only로 변경.
+			SetShowMouseCursor(false); //마우스 커서 보여주기.
+		}
+
+		PopupWidgetArray.Top()->SetVisibility(ESlateVisibility::Collapsed); //위젯 안보이게 하기.
+		PopupWidgetArray.Pop(); //배열에서 탈락시키기.
 	}
 }

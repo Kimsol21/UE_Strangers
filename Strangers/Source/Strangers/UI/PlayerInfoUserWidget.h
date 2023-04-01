@@ -6,6 +6,10 @@
 #include "Blueprint/UserWidget.h"
 #include "PlayerInfoUserWidget.generated.h"
 
+class UProgressBar;
+class UTextBlock;
+class UMyPlayerStatComponent;
+
 /**
  * 
  */
@@ -15,7 +19,7 @@ class STRANGERS_API UPlayerInfoUserWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void BindPlayerStat(class UMyPlayerStatComponent* NewPlayerStat);
+	void BindPlayerStat(UMyPlayerStatComponent* NewPlayerStat);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -24,15 +28,15 @@ protected:
 	void UpdateLevelWidget();
 
 private:
-	TWeakObjectPtr<class UMyPlayerStatComponent> CurrentPlayerStat; //약포인터 사용
+	TWeakObjectPtr<UMyPlayerStatComponent> CurrentPlayerStat; //약포인터 사용
 
 	UPROPERTY()
-	class UProgressBar* HPProgressBar;
+	UProgressBar* HPProgressBar;
 
 	UPROPERTY()
-	class UProgressBar* EXPProgressBar;
+	UProgressBar* EXPProgressBar;
 
 	UPROPERTY()
-	class UTextBlock* LevelTextBlock;
+	UTextBlock* LevelTextBlock;
 	
 };

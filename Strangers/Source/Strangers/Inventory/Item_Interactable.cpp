@@ -5,6 +5,7 @@
 #include "Manager/MyGameInstance.h"
 #include "Character/Player/MyPlayer.h"
 #include "Inventory/InventoryComponent.h"
+#include "Character/Player/MyPlayerController.h"
 
 // Sets default values
 AItem_Interactable::AItem_Interactable()
@@ -47,17 +48,17 @@ void AItem_Interactable::BeginPlay()
 	
 }
 
-void AItem_Interactable::Interact(APlayerController* Controller)
+void AItem_Interactable::Interact(AMyPlayerController* Controller)
 {
-	if (AMyPlayer* p = Cast<AMyPlayer>(Controller->GetCharacter()))
+	if (Controller)
 	{
-		p->MyInventory->AddItem(this); //컨트롤러에서 캐릭터의 인벤토리 컴포넌트 불러와서 그곳에 이 아이템 주솟값 저장하기.
+		Controller->GetPossessedPawn()->GetMyInventoryComponent()->AddItem(this);
 	}
 }
 
 FString AItem_Interactable::GetUseText() const //여기서의 const는 해당 함수가 속해있는 멤버변수의 값을 바꾸지 않겠다는 의미이다. 
 { 
-	return *FString::Printf(TEXT("%s : Press E to %s"), *ItemDataTable->Name, *ItemDataTable->Action) ;
+	return *FString::Printf(TEXT("%s : Press E to %s"), *ItemData->Name, *ItemData->Action) ;
 }
 
 bool AItem_Interactable::SetItemData()
@@ -65,7 +66,7 @@ bool AItem_Interactable::SetItemData()
 
 	if (UMyGameInstance* GI = Cast<UMyGameInstance>(GetWorld()->GetGameInstance())) //게임 인스턴스 가져오기.
 	{
-		ItemDataTable = GI->GetItemData(ID); //데이터 테이블 가져오기. 
+		ItemData = GI->GetItemData(ID); //데이터 테이블 가져오기. 
 		return true;
 	}
 	else return false;

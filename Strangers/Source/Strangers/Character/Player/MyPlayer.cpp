@@ -275,11 +275,11 @@ void AMyPlayer::CheckForInteractables()
 		
 		if (AItem_Interactable* Interactable = Cast<AItem_Interactable>(HitResult.GetActor()))
 		{
-			MyPlayerController->CurrentInteractable = Interactable;
+			MyPlayerController->SetCurrentInteractableItem(Interactable);
 			return;
 		}
 	}
-	MyPlayerController->CurrentInteractable = nullptr;
+	MyPlayerController->SetCurrentInteractableItem(nullptr);
 	
 }
 

@@ -10,6 +10,8 @@
 #include "Components/CapsuleComponent.h"
 #include "MyPlayer.generated.h"
 
+class UInventoryComponent;
+
 /**
  * 
  */
@@ -37,7 +39,7 @@ protected:
 public:
 	class AMyPlayerController* MyPlayerController;
 
-
+	UInventoryComponent* GetMyInventoryComponent() const{ return MyInventory; };
 	
 
 	void SetEXP(float _NewEXP);
@@ -54,8 +56,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Weapon)
 	class AMyWeapon* CurrentWeapon;
 
-	UPROPERTY(VisibleAnywhere, Category = Inventory)
-		class UInventoryComponent* MyInventory;
+	
 
 	UPROPERTY(VisibleAnywhere, Category = Stat)
 		class UMyPlayerStatComponent* MyStat;
@@ -81,7 +82,8 @@ private:
 
 	void CheckForInteractables();
 
-	
+	UPROPERTY(VisibleAnywhere, Category = Inventory)
+	UInventoryComponent* MyInventory;
 
 	UFUNCTION()
 		void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);//AnimInstance의 OnMontageEnded 델리게이트에 바인딩할 함수.

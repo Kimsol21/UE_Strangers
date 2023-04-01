@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
+class AItem_Interactable;
 
 DECLARE_MULTICAST_DELEGATE(FOnInventoryUpdateDelegate);
 
@@ -25,12 +26,19 @@ protected:
 public:
 	FOnInventoryUpdateDelegate OnInventoryUpdate;
 
-	bool AddItem(class AItem_Interactable* Item); //인벤토리에 아이템 추가.
+	void AddItem(AItem_Interactable* Item); //인벤토리에 아이템 추가.
 	void RemoveItem(); //아이템삭제는 어케할꼬.. 
 
-	TArray<class AItem_Interactable*> Inventory; //인벤토리
+	TArray<AItem_Interactable*> GetInventory();
+
+	UPROPERTY(VisibleAnywhere, Category = UI)
+	class UInventoryUserWidget* InventoryWidget;
 
 	int32 Capacity = 20; //인벤토리 용량.
+
+private:
+
+	TArray<struct FItemData*> Inventory; //인벤토리
 
 
 	
