@@ -41,4 +41,10 @@ public:
 	// ItemInfo 텍스트값 반환시켜주는 함수. UI블루프린트와 연동.
 	UFUNCTION(BlueprintCallable, Category = "Pickup")
 	FString GetUseText() const; 
+
+	UTexture2D* GetIconTexture() const { return IconTexture; };
+
+
+private:
+	UTexture2D* IconTexture; //아이콘텍스쳐
 };

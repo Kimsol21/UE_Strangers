@@ -29,10 +29,14 @@ public:
 	AMyPlayer* GetPossessedPawn() const { return possessedPawn; };
 	UInventorySlotWidget* GetInventorySlotWidget() const { return InventorySlotWidget; };
 
-	void SetCurrentInteractableItem(AItem_Interactable* const Item) { CurrentInteractable = Item; };
+	void SetCurrentInteractableItem(AItem_Interactable* Item) { CurrentInteractable = Item; };
 
 	UFUNCTION(Blueprintcallable)
 	void RemoveCurrentPopup(); //가장 최근에 띄워진 팝업을 삭제합니다.
+
+	//아이템 관련	
+	UPROPERTY(VisibleAnywhere, Category = Item)
+		AItem_Interactable* CurrentInteractable;
 
 
 protected:
@@ -56,8 +60,8 @@ private:
 	UUserWidget* ItemInfoWidget; //HUD:아이템 정보 위젯, 화면중앙.
 
 	UPROPERTY(EditDefaultsOnly, Category = UI)
-	TSubclassOf<UInventoryUserWidget> InventoryWidgetClass;
-	UInventoryUserWidget* InventoryWidget; //Popup : 인벤토리창 위젯.
+	TSubclassOf<UInventoryUserWidget> InventoryUserWidgetClass;
+	UInventoryUserWidget* InventoryUserWidget; //Popup : 인벤토리창 위젯.
 
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	TSubclassOf<UInventorySlotWidget> InventorySlotWidgetClass;
@@ -65,9 +69,9 @@ private:
 
 	TArray<UUserWidget*> PopupWidgetArray; //Popup 배열.
 
-	//아이템 관련	
-	UPROPERTY(VisibleAnywhere, Category = Item)
-	AItem_Interactable* CurrentInteractable;
+	////아이템 관련	
+	//UPROPERTY(VisibleAnywhere, Category = Item)
+	//AItem_Interactable* CurrentInteractable;
 
 private:
 	//인풋 바인딩 함수들

@@ -9,6 +9,7 @@
 class UInventoryComponent;
 class UInventorySlotWidget;
 class UWrapBox;
+class AMyPlayerController;
 
 /**
  * 
@@ -33,6 +34,10 @@ private:
 	UInventorySlotWidget* NewInventorySlotWidget; //추가할 인벤토리 슬롯.
 
 	UWrapBox* InventorySlotMotherUI; //실제 슬롯들을 담고 있는 WrapBox.
+
+	TArray<UInventorySlotWidget*> Slots; //인벤토리 슬롯 배열. 
+
+	AMyPlayerController* CurrentController; //플레이어 컨트롤러.
 
 };
   

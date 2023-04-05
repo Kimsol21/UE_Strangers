@@ -24,6 +24,7 @@ AItem_Interactable::AItem_Interactable()
 	}
 
 	ItemMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+
 	
 
 }
@@ -33,19 +34,18 @@ void AItem_Interactable::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!SetItemData())
+	if (SetItemData())
 	{
-		UE_LOG(LogTemp, Error, TEXT("게임 인스턴스를 불러오지 못했습니다. 아이템 데이터를 Set 할 수 없습니다."));
+		//데이터 테이블에서 로드할 Icon의 경로정보를 가져와 FString에 저장합니다. 
+		FString TexturePath = ItemData->Icon;
+
+		//경로정보를 바탕으로 FSoftObjectPath를 생성합니다.
+		FSoftObjectPath SoftRef = FSoftObjectPath(TexturePath);
+
+		//FSoftObjectPath를 로드하여 UTexture2D로 캐스팅합니다.
+		IconTexture = Cast<UTexture2D>(SoftRef.TryLoad());
 	}
 
-
-	////스태틱메쉬 에셋 불러온 후 적용
-	//static ConstructorHelpers::FObjectFinder<UStaticMesh> SM_ITEM( *ItemDataTable->Mesh );
-	//if (SM_ITEM.Succeeded())
-	//{
-	//	ItemMesh->SetStaticMesh(SM_ITEM.Object);
-	//}
-	
 }
 
 void AItem_Interactable::Interact(AMyPlayerController* Controller)

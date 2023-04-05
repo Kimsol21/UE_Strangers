@@ -9,28 +9,12 @@
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
 }
-
 
 // Called when the game starts
 void UInventoryComponent::BeginPlay()
 {
-	Super::BeginPlay();
-
-	//인벤토리 위젯 받아오기.
-	/*UInventoryUserWidget InventoryWidget = Cast<UInventoryUserWidget>(InventoryWidget->GetUserWidgetObject());
-	if (nullptr == InventoryWidget)
-	{
-		UE_LOG(LogTemp, Error, TEXT("InventoryWidget  is null!"));
-		return;
-	}
-	InventoryWidget->BindMonsterStat(this);*/
-	
+	Super::BeginPlay();	
 }
 
 void UInventoryComponent::AddItem(AItem_Interactable* Item)

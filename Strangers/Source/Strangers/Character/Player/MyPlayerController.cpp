@@ -42,7 +42,7 @@ AMyPlayerController::AMyPlayerController()
 	static ConstructorHelpers::FClassFinder<UInventoryUserWidget> UI_INVENTORY(TEXT("WidgetBlueprint'/Game/UI/Inventory/WG_Inventory.WG_Inventory_C'"));
 	if (UI_INVENTORY.Succeeded())
 	{
-		InventoryWidgetClass = UI_INVENTORY.Class;
+		InventoryUserWidgetClass = UI_INVENTORY.Class;
 	}
 
 }
@@ -75,10 +75,10 @@ void AMyPlayerController::BeginPlay()
 	InventorySlotWidget = CreateWidget<UInventorySlotWidget>(this, InventorySlotWidgetClass);
 
 	//인벤토리 위젯
-	InventoryWidget = CreateWidget<UInventoryUserWidget>(this, InventoryWidgetClass);
-	InventoryWidget->BindInventory(possessedPawn->GetMyInventoryComponent());
-	InventoryWidget->AddToViewport();
-	InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	InventoryUserWidget = CreateWidget<UInventoryUserWidget>(this, InventoryUserWidgetClass);
+	InventoryUserWidget->BindInventory(possessedPawn->GetMyInventoryComponent());
+	InventoryUserWidget->AddToViewport();
+	InventoryUserWidget->SetVisibility(ESlateVisibility::Collapsed);
 
 	
 
@@ -109,9 +109,9 @@ void AMyPlayerController::SetupInputComponent()
 
 void AMyPlayerController::CallInventory()
 {
-	if (InventoryWidget&&!InventoryWidget->IsVisible()) //InventoryWidget이 유효하고, 
+	if (InventoryUserWidget&&!InventoryUserWidget->IsVisible()) //InventoryUserWidget이 유효하고, 
 	{
-		AddPopup(*InventoryWidget);
+		AddPopup(*InventoryUserWidget);
 	}
 }
 

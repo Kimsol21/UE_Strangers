@@ -12,18 +12,13 @@ void UInventorySlotWidget::NativeConstruct()
 
 	ItemIcon = Cast<UImage>(GetWidgetFromName(TEXT("Image_ItemIcon")));
 	NumberOfItems = Cast<UTextBlock>(GetWidgetFromName(TEXT("Text_NumberOfItems")));
+	IsEmpty = true;
 }
 
-void UInventorySlotWidget::SetItemDataToUI(struct FItemData* ItemData)
+void UInventorySlotWidget::SetItemDataToUI(UTexture2D* MyIconTexture)
 {
-	if (ItemData)
-	{
-		CurrentItemData = ItemData; //아이템 데이터 구조체 변수에 보관.
-
-		if (ItemIcon)
-		{
-			//ItemIcon->SetBrushFromTexture()
-		}
-
-	}
+	FSlateBrush b;
+	b.SetResourceObject(MyIconTexture);
+	ItemIcon->SetBrush(b);
+	IsEmpty = false;
 }

@@ -8,7 +8,7 @@
 
 class AItem_Interactable;
 
-DECLARE_MULTICAST_DELEGATE(FOnInventoryUpdateDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnInventoryUpdateDelegate); //인벤토리가 업데이트될때 알려주는 델리게이트.
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class STRANGERS_API UInventoryComponent : public UActorComponent
@@ -32,7 +32,7 @@ public:
 	TArray<AItem_Interactable*> GetInventory();
 
 	UPROPERTY(VisibleAnywhere, Category = UI)
-	class UInventoryUserWidget* InventoryWidget;
+	class UInventoryUserWidget* InventoryUserWidget;
 
 	int32 Capacity = 20; //인벤토리 용량.
 
