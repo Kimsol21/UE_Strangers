@@ -85,6 +85,7 @@ private:
 	void CallAttack();
 	void CallInteract();
 	void CallInventory();
+	void CallRoll();
 	void PressX();
 
 	//UI 관련 함수들

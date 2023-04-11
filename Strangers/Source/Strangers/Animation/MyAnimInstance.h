@@ -10,6 +10,8 @@
 
 DECLARE_MULTICAST_DELEGATE(FOnNextAttackCheckDelegate);//멀티캐스트 델리게이트 선언.
 DECLARE_MULTICAST_DELEGATE(FOnAttackHitCheckDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate); //공격 끝나면 호출할 델리게이트
+DECLARE_MULTICAST_DELEGATE(FOnRollEndDelegate); //공격 끝나면 호출할 델리게이트
 
 /**
  * 
@@ -25,14 +27,20 @@ public:
 
 	void PlayAttackMontage();
 	void PlayDamagedMontage();
+	void PlayRollMontage();
 	void JumpToAttackMontageSection(int32 NewSection);//콤보에 따른 몽타주 섹션 넘기기
 
 public:
 	FOnNextAttackCheckDelegate OnNextAttackCheck;//위에서 선언한 델리게이트 유형으로 만든 델리게이트.
 	FOnAttackHitCheckDelegate OnAttackHitCheck;
+	FOnAttackEndDelegate OnAttackEnd;
+	FOnRollEndDelegate OnRollEnd;
 	void SetDeadAnim() { IsDead = true; }
 
 private:
+	UFUNCTION()
+		void OnMyMontageEnded(UAnimMontage* Montage, bool bInterrupted);//AnimInstance의 OnMontageEnded 델리게이트 바인딩 함수.
+
 	UFUNCTION()
 		void AnimNotify_AttackHitCheck(); // "AnimNotify_노티파이명" 이름의 멤버 함수를 찾아서 호출하는 방식.
 
@@ -49,13 +57,18 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
 	bool IsInAir;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
+	bool IsDead;
+
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
 	UAnimMontage* AttackMontage;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
-		UAnimMontage* DamagedMontage;
+	UAnimMontage* DamagedMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
-	bool IsDead;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+	UAnimMontage* RollMontage;
+
+	
 	
 };

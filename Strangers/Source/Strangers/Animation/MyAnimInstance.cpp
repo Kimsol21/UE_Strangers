@@ -8,17 +8,29 @@ UMyAnimInstance::UMyAnimInstance()
 	CurrentPawnSpeed = 0.0f;
 	IsInAir = false;
 	IsDead = false;
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> ATTACK_MONTAGE(TEXT("AnimMontage'/Game/Animations/Kwang_Skeleton_Montage.Kwang_Skeleton_Montage'"));
+
+	OnMontageEnded.AddDynamic(this, &UMyAnimInstance::OnMyMontageEnded);
+	
+
+#pragma region Load Animation Assets
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ATTACK_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_Skeleton_Montage.Kwang_Skeleton_Montage'"));
 	if (ATTACK_MONTAGE.Succeeded())
 	{
 		AttackMontage = ATTACK_MONTAGE.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> DAMAGED_MONTAGE(TEXT("AnimMontage'/Game/Animations/Kwang_Damaged_Montage.Kwang_Damaged_Montage'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DAMAGED_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_Damaged_Montage.Kwang_Damaged_Montage'"));
 	if (ATTACK_MONTAGE.Succeeded())
 	{
 		DamagedMontage = DAMAGED_MONTAGE.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ROLL_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_RollInplace_Montage.Kwang_RollInplace_Montage'"));
+	if (ROLL_MONTAGE.Succeeded())
+	{
+		RollMontage = ROLL_MONTAGE.Object;
+	}
+#pragma endregion
 }
 
 void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -43,7 +55,6 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 void UMyAnimInstance::PlayAttackMontage()
 {
 	if (IsDead) return;
-
 	Montage_Play(AttackMontage, 1.0f);//AnimInstance가 제공하는 함수. 인자:플레이할 몽타주, 재생속도
 }
 
@@ -53,6 +64,12 @@ void UMyAnimInstance::PlayDamagedMontage()
 	Montage_Play(DamagedMontage, 0.01f);
 }
 
+void UMyAnimInstance::PlayRollMontage()
+{
+	if (IsDead) return;
+	Montage_Play(RollMontage, 1.0f);
+}
+
 void UMyAnimInstance::JumpToAttackMontageSection(int32 NewSection)
 {
 	if (IsDead) return;
@@ -60,6 +77,22 @@ void UMyAnimInstance::JumpToAttackMontageSection(int32 NewSection)
 	if (Montage_IsPlaying(AttackMontage))
 	{
 		Montage_JumpToSection(GetAttackMontageSectionName(NewSection), AttackMontage); //인자로 받은 콤보를 섹션FName으로 변환해 AttackMontage의 해당 섹션을 재생.
+	}
+}
+
+void UMyAnimInstance::OnMyMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage == AttackMontage)
+	{
+		OnAttackEnd.Broadcast();
+	}
+	else if(Montage == RollMontage)
+	{
+		OnRollEnd.Broadcast();
+	}
+	else
+	{
+		return;
 	}
 }
 

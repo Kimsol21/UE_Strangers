@@ -10,13 +10,13 @@ UMonster_AnimInstance::UMonster_AnimInstance()
 	CurrentPawnSpeed = 0.0f;
 	IsDead = false;
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> ATTACK_MONTAGE(TEXT("AnimMontage'/Game/Animations/Corpse_Skeleton_Montage.Corpse_Skeleton_Montage'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ATTACK_MONTAGE(TEXT("AnimMontage'/Game/Animations/Monster/Corpse_Skeleton_Montage.Corpse_Skeleton_Montage'"));
 	if (ATTACK_MONTAGE.Succeeded())
 	{
 		AttackMontage = ATTACK_MONTAGE.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> DAMAGED_MONTAGE(TEXT("AnimMontage'/Game/Animations/Damaged_Montage.Damaged_Montage'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DAMAGED_MONTAGE(TEXT("AnimMontage'/Game/Animations/Monster/Damaged_Montage.Damaged_Montage'"));
 	if (ATTACK_MONTAGE.Succeeded())
 	{
 		DamagedMontage = DAMAGED_MONTAGE.Object;

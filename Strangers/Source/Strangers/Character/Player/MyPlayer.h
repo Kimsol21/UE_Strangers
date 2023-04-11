@@ -16,7 +16,7 @@ class UInventoryComponent;
  * 
  */
 
-DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate); //공격 끝나면 호출할 델리게이트
+
 
 UCLASS()
 class STRANGERS_API AMyPlayer : public AMyCharacter
@@ -68,7 +68,7 @@ public:
 		UCameraComponent* Camera;
 
 	void Attack();
-	FOnAttackEndDelegate OnAttackEnd;
+	
 
 	void UpDown(float NewAxisValue);
 	void LeftRight(float NewAxisValue);
@@ -76,6 +76,7 @@ public:
 	void Turn(float NewAxisValue);
 	void ZoomIn();
 	void ZoomOut();
+	void Roll();
 
 
 private:
@@ -85,13 +86,19 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Inventory)
 	UInventoryComponent* MyInventory;
 
-	UFUNCTION()
-		void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);//AnimInstance의 OnMontageEnded 델리게이트에 바인딩할 함수.
-
 	void AttackStartComboState(); //공격이 시작할 때 관련 속성 지정.
-	void AttackEndComboState();//공격이 종료할때 사용.
+
+	void MoveForward();
 
 private:
+	float MyMoveSpeed = 2.0f;
+
+	UPROPERTY(VisibleAnywhere, Category = Movement)
+		bool bCanMove = true; //움직일 수 있는지
+
+	UPROPERTY(VisibleAnywhere, Category = Attack)
+		bool bIsInvincible = false; //무적인지
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = SpringArm, Meta = (AllowPrivateAccess = true))
 		FVector ExpectedAttackMovePos; //미세전진 목표위치.
 
@@ -99,7 +106,7 @@ private:
 		bool bCanZoom; //선형보간 줌 가능한지
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = SpringArm, Meta = (AllowPrivateAccess = true))
-		bool bCanAttackMove; //AttackMove선형보간 가능한지
+		bool bCanMyMove; //AttackMove선형보간 가능한지
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = SpringArm, Meta = (AllowPrivateAccess = true))
 		float ExpectedSpringArmLength; //스프링암 길이 목표값.

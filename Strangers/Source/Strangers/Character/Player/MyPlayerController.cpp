@@ -102,10 +102,19 @@ void AMyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("Interact"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInteract);
 	InputComponent->BindAction(TEXT("Inventory"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInventory);
 	InputComponent->BindAction(TEXT("Quit"), EInputEvent::IE_Pressed, this, &AMyPlayerController::PressX);
+	InputComponent->BindAction(TEXT("Roll"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallRoll);
 
 }
 
 #pragma region InputBindFunctions
+
+void AMyPlayerController::CallRoll()
+{
+	if (possessedPawn)
+	{
+		possessedPawn->Roll();
+	}
+}
 
 void AMyPlayerController::CallInventory()
 {

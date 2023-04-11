@@ -33,7 +33,7 @@ AMyMonster::AMyMonster()
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -100.0f));
 
-	static ConstructorHelpers::FClassFinder<UAnimInstance> ABP_KWANG(TEXT("AnimBlueprint'/Game/Animations/Monster_AnimBlueprint.Monster_AnimBlueprint_C'")); //클래스정보 가져오기.
+	static ConstructorHelpers::FClassFinder<UAnimInstance> ABP_KWANG(TEXT("AnimBlueprint'/Game/Animations/Monster/Monster_AnimBlueprint.Monster_AnimBlueprint_C'")); //클래스정보 가져오기.
 	if (ABP_KWANG.Succeeded())
 	{
 		GetMesh()->SetAnimInstanceClass(ABP_KWANG.Class);
