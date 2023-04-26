@@ -8,6 +8,8 @@
 #include "Inventory/Item_Interactable.h"
 #include "Inventory/InventoryComponent.h"
 #include "Character/Player/MyPlayerStatComponent.h"
+#include "Components/BoxComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #pragma region Init Function
 
@@ -66,6 +68,26 @@ AMyPlayer::AMyPlayer()
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("MyCharacter"));//내가 만든 콜리전 프리셋 사용.
 
+
+
+	//락온 LockOn 관련 변수 초기화.
+	bIsLockedOn = false;
+	TargettingHeightOffset = 20.0f;
+	LockedOnCharacter = nullptr;
+
+	TargetCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TargetCollisionBox"));
+	TargetCollisionBox->SetBoxExtent(FVector(400.0f, 400.0f, 300.0f)); //콜리전 감지 범위 설정.
+	TargetCollisionBox->SetCollisionProfileName(TEXT("OnlyPawnDetacted")); //콜리전 프리셋 설정.
+	TargetCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionBeginOverlap); //콜리전 오버랩 델리게이트에 함수 바인딩.
+	TargetCollisionBox->OnComponentEndOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionEndOverlap);
+
+
+
+	//스테미나 관련 변수 초기화.
+	MaxStamina = 100.0f; // 스테미나 최대값.
+	CurrentStamina = MaxStamina; //현재 스테미나 값.
+	bCanStaminaRecharge = true; // 스테미나가 재 충전 될 수 있는지 여부.
+	bIsSprinting = false; // 전력질주 중인지 여부.
 }
 
 void AMyPlayer::PostInitializeComponents()
@@ -81,7 +103,7 @@ void AMyPlayer::PostInitializeComponents()
 	//MyAnim->OnMontageEnded.AddDynamic(this, &AMyPlayer::OnMyMontageEnded); //AnimInstance의 델리게이트 OnMontageEnded에 My함수 바인딩.
 	MyAnim->OnAttackEnd.AddLambda([this]()->void {
 		bIsAttacking = false;//공격이 끝났음을 알림.
-		bCanMove = true;
+		bDoingSomething = false;
 		bIsComboInputOn = false;
 		bCanNextCombo = false;
 		CurrentCombo = 0; //콤보공격 끝, 콤보 0으로 초기화.s
@@ -89,9 +111,17 @@ void AMyPlayer::PostInitializeComponents()
 
 	MyAnim->OnRollEnd.AddLambda([this]()->void {
 		bIsInvincible = false;
-		bCanMove = true;
+		bDoingSomething = false;
 		bCanMyMove = false;
 		MyMoveSpeed = 2.0f;
+		bDoingSomething = false;
+		});
+
+	MyAnim->OnDrinkPotionEnd.AddLambda([this]()->void {
+		GetCharacterMovement()->MaxWalkSpeed *=5; //원래 이동속도로 복귀.
+		bDoingSomething = false; // 행동중인지 여부를 false로 설정.
+		isDoingMovableAction = false;
+		bIsDrinkPotion = false;
 		});
 
 
@@ -108,11 +138,15 @@ void AMyPlayer::PostInitializeComponents()
 
 	MyAnim->OnAttackHitCheck.AddUObject(this, &AMyPlayer::AttackCheck); //MyAnim에서 만든 델리게이트에 MyCharacter함수 바인딩.
 
-	//HP가 Zero일때 관련 람다함수 선언, 바인딩. 김솔
+	//HP가 Zero일때 관련 람다함수 선언, 바인딩. 
 	MyStat->OnHPIsZero.AddLambda([this]() ->void {
 		MyAnim->SetDeadAnim();
 		SetActorEnableCollision(false);
 		});
+
+
+
+	
 
 }
 
@@ -164,6 +198,39 @@ void AMyPlayer::Tick(float DeltaTime)
 
 	//물체 상호작용
 	CheckForInteractables();
+
+#pragma region LOGIC About Stamina
+	if (bIsSprinting) //전력질주 중이라면
+	{
+		//스테미나 천천히 감소. (보간)
+		CurrentStamina = FMath::FInterpConstantTo(CurrentStamina, 0.0f, DeltaTime, 0.1f);//FInterpConstantTo : 일정한 step으로 Current에서 Target까지 float 보간.
+		
+		if (CurrentStamina <= 0.0f) //스테미나가 전부 고갈되면,
+		{
+			//전부고갈되었을때의 로직, 함수, 델리게이트 실현.
+		}
+	}
+	else
+	{
+		if (CurrentStamina < MaxStamina) //스테미나가 최대치가 아니라면,
+		{
+			if (bCanStaminaRecharge) // 충전할 수 있는 상황일때 서서히 재충전.
+			{
+				CurrentStamina = FMath::FInterpConstantTo(CurrentStamina, MaxStamina, DeltaTime, bCanStaminaRecharge);
+			}
+		}
+	}
+#pragma endregion 
+
+#pragma region LOGIC About LockON
+	if (bIsLockedOn) // 락온 상태라면, 
+	{
+		//카메라 변경 로직.
+		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LockedOnCharacter->GetActorLocation());
+		LookAtRotation.Pitch -= TargettingHeightOffset; // 높이 값 적용.
+		GetController()->SetControlRotation(LookAtRotation);
+	}
+#pragma endregion
 }
 
 void AMyPlayer::MoveForward()
@@ -171,6 +238,26 @@ void AMyPlayer::MoveForward()
 	if (bCanMyMove)
 	{
 		GetCharacterMovement()->MoveSmooth(GetActorForwardVector(), MyMoveSpeed);
+	}
+}
+
+void AMyPlayer::OnTargetCollisionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	auto OverlappedCharacter= Cast<ACharacter>(OtherActor);
+	if (OverlappedCharacter)
+	{
+		//락온 가능한 범위안에 들어오면 지원자 배열에 추가.
+		LockOnCandidates.AddUnique(OverlappedCharacter); //AddUnique : 기존 컨테이너에 동일한 엘리먼트가 이미 존재하는 경우는 추가안함. 
+	}
+}
+
+void AMyPlayer::OnTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	auto OverlappedCharacter = Cast<ACharacter>(OtherActor);
+	if (OverlappedCharacter)
+	{
+		//범위에서 벗어나면 락온 지원자에서 탈락.
+		LockOnCandidates.Remove(OverlappedCharacter); 
 	}
 }
 
@@ -206,7 +293,11 @@ void AMyPlayer::CheckForInteractables()
 
 void AMyPlayer::UpDown(float NewAxisValue)
 {
-	if (bCanMove)
+	if (!bDoingSomething)//뭔가를 하고있지 않을때만 이동할 수 있다.
+	{
+		AddMovementInput(FRotationMatrix(FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::X), NewAxisValue);//언리얼 엔진에서 시선방향은 X축, 우측 방향은 Y축을 의미한다.
+	}
+	else if (isDoingMovableAction)//뭔가를 하면서 이동할수 있는 동작인 경우에도 이동할 수 있게한다.
 	{
 		AddMovementInput(FRotationMatrix(FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::X), NewAxisValue);//언리얼 엔진에서 시선방향은 X축, 우측 방향은 Y축을 의미한다.
 	}
@@ -214,9 +305,13 @@ void AMyPlayer::UpDown(float NewAxisValue)
 
 void AMyPlayer::LeftRight(float NewAxisValue) //-1,1
 {
-	if (bCanMove)
+	if (!bDoingSomething)
 	{
 		AddMovementInput(FRotationMatrix(FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::Y), NewAxisValue);//좌우로 폰이동.
+	}
+	else if (isDoingMovableAction)//뭔가를 하면서 이동할수 있는 동작인 경우에도 이동할 수 있게한다.
+	{
+		AddMovementInput(FRotationMatrix(FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::Y), NewAxisValue);//언리얼 엔진에서 시선방향은 X축, 우측 방향은 Y축을 의미한다.
 	}
 }
 void AMyPlayer::LookUp(float NewAxisValue)
@@ -243,17 +338,56 @@ void AMyPlayer::ZoomOut()
 
 void AMyPlayer::Roll()
 {
+	if (bDoingSomething || GetCharacterMovement()->IsFalling()) return;
+
 	if (MyAnim)
 	{
-		if (!MyAnim->IsAnyMontagePlaying()&&!GetMovementComponent()->IsFalling())
-		{
-			MyMoveSpeed = 4.0f; // 구르기 속도 조절.
-			bCanMyMove = true; // Tick에서 내 캐릭터가 움직일 수 있도록 설정.
-			bIsInvincible = true; // 무적상태로 전환.
-			bCanMove = false; // 구르기 상태에선 이동을 금지하도록 설정.
-			MyAnim->PlayRollMontage();           
-		}
+		MyMoveSpeed = 4.0f; // 구르기 속도 조절.
+		bCanMyMove = true; // Tick에서 내 캐릭터가 움직일 수 있도록 설정.
+		bIsInvincible = true; // 무적상태로 전환.
+		bDoingSomething = true;
+		MyAnim->PlayRollMontage();
+		bDoingSomething = true;
 	}	
+}
+
+void AMyPlayer::DrinkPotion()
+{
+	if (bDoingSomething || GetCharacterMovement()->IsFalling()) return;
+
+	if (MyAnim)
+	{
+		bIsDrinkPotion = true;
+		
+		isDoingMovableAction = true;
+		bDoingSomething = true;
+		GetCharacterMovement()->MaxWalkSpeed *= 0.2f; //포션먹을때는 움직임 속도 감소.
+		MyAnim->PlayDrinkPotion();
+		OnStartDrinkPotion.Broadcast();
+		//포션먹기 애니메이션 재생. 
+		//노티파이 브로드케스트.	
+	}
+}
+
+void AMyPlayer::LockOn()
+{
+	if (bIsLockedOn) // 이미 락온중인 상태였다면
+	{
+		bIsLockedOn = false; //락온 해제.
+		LockedOnCharacter = nullptr; // 락온되어있던 캐릭터 null처리.
+	}
+	else
+	{
+		if (LockOnCandidates.Num() > 0) // 주변에 락온 희망자가 감지되었는지 확인.
+		{
+			LockedOnCharacter = LockOnCandidates[0]; //희망자 중 가장 가까운 사람을 락온캐릭터에 저장.
+
+			if (LockedOnCharacter) // 락온캐릭터가 유효하다면,
+			{
+				bIsLockedOn = true; // 락온중임을 true로 설정.
+			}
+		}
+	}
 }
 
 #pragma endregion
@@ -262,21 +396,24 @@ void AMyPlayer::Roll()
 
 void AMyPlayer::Attack()
 {
-	if (bIsAttacking)//원래 공격중인 상태였으면,
-	{
-		if (bCanNextCombo) //다음콤보를 실행할 수 있다면
-		{
-			bIsComboInputOn = true; //콤보인풋 입력여부를 true로 바꿔준다. OnAttackCheck 노티파이 발생시 AttackStartComboState함수 출력, (델리게이트)
-		}
-	}
-	else//공격중인 상태가 아니었다면,
-	{
+	if (!bDoingSomething)//뭔가를 안하고있을때 공격개시
+	{		
 		AttackStartComboState();//다음 콤보로 진행가능하게 하고, 콤보+1해주는 함수
 		MyAnim->PlayAttackMontage(); //공격 몽타주 재생.
 		MyAnim->JumpToAttackMontageSection(CurrentCombo);//Current콤보의 몽타주 섹션 재생.
 
 		bIsAttacking = true;//공격중임을 알림.
-		bCanMove = false;
+		bDoingSomething = true;
+	}
+	else
+	{
+		if (bIsAttacking)//원래 공격중인 상태였으면,
+		{
+			if (bCanNextCombo) //다음콤보를 실행할 수 있다면
+			{
+				bIsComboInputOn = true; //콤보인풋 입력여부를 true로 바꿔준다. OnAttackCheck 노티파이 발생시 AttackStartComboState함수 출력, (델리게이트)
+			}
+		}
 	}
 }
 
@@ -300,21 +437,6 @@ float AMyPlayer::GetAttackPower()
 	return MyStat->GetAttackPower();
 }
 
-//void AMyPlayer::OnMyMontageEnded(UAnimMontage* Montage, bool bInterrupted)//UAnimInstance에서 제공하는 OnMontageEnded델리게이트에 바인딩된 함수.
-//{
-//	
-//	bIsAttacking = false;//공격이 끝났음을 알림.
-//	bCanMove = true;
-//	AttackEndComboState();//콤보 초기화, 변수초기화.
-//}
-//
-//void AMyPlayer::AttackEndComboState()
-//{
-//	bIsComboInputOn = false;
-//	bCanNextCombo = false;
-//	CurrentCombo = 0; //콤보공격 끝, 콤보 0으로 초기화.
-//}
-
 void AMyPlayer::SetDamage(float _Damage)
 {
 	MyStat->SetDamage(_Damage);
@@ -324,7 +446,10 @@ float AMyPlayer::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 {
 	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	MyStat->SetDamage(FinalDamage);
+	MyStat->SetDamage(FinalDamage); //데미지 설정.
+
+
+	//bDoingSomething = true;
 	MyAnim->PlayDamagedMontage();
 
 	return FinalDamage;

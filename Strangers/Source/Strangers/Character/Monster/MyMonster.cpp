@@ -132,7 +132,7 @@ float AMyMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 {
 	CurrentAttacker = Cast<AMyPlayer>(DamageCauser);
 	DamagedEffect->Activate(true); //피격 효과 재생
-	if(MonsterAnim) MonsterAnim->PlayDamagedMontage();//피격 애니메이션 재생.
+	if(MonsterAnim) MonsterAnim->PlayDamagedMontage();//피격 애니메이션 재생. 
 
 	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }

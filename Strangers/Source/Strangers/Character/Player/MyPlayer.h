@@ -12,6 +12,8 @@
 
 class UInventoryComponent;
 
+DECLARE_MULTICAST_DELEGATE(FOnStartDrinkPotionDelegate);
+
 /**
  * 
  */
@@ -40,6 +42,11 @@ public:
 	class AMyPlayerController* MyPlayerController;
 
 	UInventoryComponent* GetMyInventoryComponent() const{ return MyInventory; };
+	bool GetDoingSomething() const { return bDoingSomething; };
+	bool GetIsDrinkPotion() const { 
+		UE_LOG(LogTemp, Error, TEXT("GetIsDrinkPotion is Called : %d !!!!!!!!!"), bIsDrinkPotion);
+		return bIsDrinkPotion; };
+
 	
 
 	void SetEXP(float _NewEXP);
@@ -54,9 +61,7 @@ public:
 
 
 	UPROPERTY(VisibleAnywhere, Category = Weapon)
-	class AMyWeapon* CurrentWeapon;
-
-	
+	class AMyWeapon* CurrentWeapon;	
 
 	UPROPERTY(VisibleAnywhere, Category = Stat)
 		class UMyPlayerStatComponent* MyStat;
@@ -68,7 +73,6 @@ public:
 		UCameraComponent* Camera;
 
 	void Attack();
-	
 
 	void UpDown(float NewAxisValue);
 	void LeftRight(float NewAxisValue);
@@ -77,7 +81,18 @@ public:
 	void ZoomIn();
 	void ZoomOut();
 	void Roll();
+	void DrinkPotion();
+	void LockOn();
 
+
+	FOnStartDrinkPotionDelegate OnStartDrinkPotion; // 포션 먹기 시작했음을 알리는 델리게이트.
+
+
+	UFUNCTION()
+	void OnTargetCollisionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 private:
 
@@ -91,10 +106,39 @@ private:
 	void MoveForward();
 
 private:
+
+	UPROPERTY(VisibleAnywhere, Category = "LockOn")
+	class UBoxComponent* TargetCollisionBox; // 락온할 타겟을 감지할 콜리전.
+	
+	bool bIsLockedOn; // 현재 락온상태인지.
+	float TargettingHeightOffset; // 락온일때 높이 오프셋값. 
+
+	UPROPERTY(VisibleAnywhere, Category = "LockOn")
+	ACharacter* LockedOnCharacter; // 현재 락온중인 캐릭터.
+
+	UPROPERTY(VisibleAnywhere, Category = "LockOn")
+	TArray<ACharacter*> LockOnCandidates; //락온범위에 감지된 지원자들.
+
+
+
+	//스테미나 관련 변수
+	float CurrentStamina; //현재 스테미나 값.
+	float MaxStamina; // 스테미나 최대값.
+	bool bCanStaminaRecharge; // 스테미나가 재 충전 될 수 있는지 여부.
+	bool bIsSprinting; // 전력질주 중인지 여부.
+
+
+
+
+	bool bIsDrinkPotion = false;
+
 	float MyMoveSpeed = 2.0f;
 
 	UPROPERTY(VisibleAnywhere, Category = Movement)
-		bool bCanMove = true; //움직일 수 있는지
+		bool bDoingSomething = false; // 걷기, 달리기, 아이들상태 외에 다른 동작을 하고 있는지 여부.
+
+	UPROPERTY(VisibleAnywhere, Category = Movement)
+		bool isDoingMovableAction = false; //점프, 포션먹기와 같은 이동인풋을 받으며 동작해야하는 행동인지 여부.
 
 	UPROPERTY(VisibleAnywhere, Category = Attack)
 		bool bIsInvincible = false; //무적인지

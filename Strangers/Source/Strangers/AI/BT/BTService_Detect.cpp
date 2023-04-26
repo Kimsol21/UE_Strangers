@@ -44,6 +44,8 @@ void UBTService_Detect::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 		CollisionQueryParam //탐색 방법에 대한 설정 값을 모아둔 구조체.
 	);
 	
+	OwnerComp.GetBlackboardComponent()->SetValueAsObject(AMyAIController::TargetKey, nullptr); //블랙보드의 타겟값 nullptr로 초기화. 
+
 	//만약 감지된 액터가 있다면,
 	if (bResult)
 	{	
@@ -64,5 +66,5 @@ void UBTService_Detect::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 
 	//감지된 액터가 없다면, 
 	DrawDebugSphere(World, Center, DetectRadius, 16, FColor::Red, false, 0.2f); //위와 같은 구모양의 디버그라인을 그리지만 색은 빨간색이다.
-	OwnerComp.GetBlackboardComponent()->SetValueAsObject(AMyAIController::TargetKey, nullptr); //블랙보드의 타겟값 nullptr로 초기화. 
+	
 }

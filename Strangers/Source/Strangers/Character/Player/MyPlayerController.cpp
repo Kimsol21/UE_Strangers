@@ -55,6 +55,7 @@ void AMyPlayerController::BeginPlay()
 	SetInputMode(InputGameOnly);
 
 	possessedPawn = Cast<AMyPlayer>(GetPawn()); //빙의된 폰 가져오기.
+	if (nullptr == possessedPawn) return;
 
 	//플레이어 정보 위젯
 	UserInfoWidget = CreateWidget<UPlayerInfoUserWidget>(this, UserInfoClass);
@@ -103,10 +104,20 @@ void AMyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("Inventory"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInventory);
 	InputComponent->BindAction(TEXT("Quit"), EInputEvent::IE_Pressed, this, &AMyPlayerController::PressX);
 	InputComponent->BindAction(TEXT("Roll"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallRoll);
+	InputComponent->BindAction(TEXT("DrinkPotion"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallDrinkPotion);
+	InputComponent->BindAction(TEXT("LockOn"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallLockOn);
 
 }
 
 #pragma region InputBindFunctions
+
+void AMyPlayerController::CallLockOn()
+{
+	if (possessedPawn)
+	{
+		possessedPawn->LockOn();
+	}
+}
 
 void AMyPlayerController::CallRoll()
 {
@@ -187,7 +198,7 @@ void AMyPlayerController::CallZoomOut()
 
 void AMyPlayerController::CallJump()
 {
-	if (possessedPawn)
+	if (possessedPawn&&!possessedPawn->GetDoingSomething())
 	{
 		possessedPawn->Jump();
 	}
@@ -198,6 +209,14 @@ void AMyPlayerController::CallAttack()
 	if (possessedPawn)
 	{
 		possessedPawn->Attack();
+	}
+}
+
+void AMyPlayerController::CallDrinkPotion()
+{
+	if (possessedPawn)
+	{
+		possessedPawn->DrinkPotion();
 	}
 }
 

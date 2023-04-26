@@ -2,6 +2,7 @@
 
 
 #include "MyAnimInstance.h"
+#include "Character/Player/MyPlayer.h"
 
 UMyAnimInstance::UMyAnimInstance()
 {
@@ -10,7 +11,6 @@ UMyAnimInstance::UMyAnimInstance()
 	IsDead = false;
 
 	OnMontageEnded.AddDynamic(this, &UMyAnimInstance::OnMyMontageEnded);
-	
 
 #pragma region Load Animation Assets
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> ATTACK_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_Skeleton_Montage.Kwang_Skeleton_Montage'"));
@@ -19,7 +19,7 @@ UMyAnimInstance::UMyAnimInstance()
 		AttackMontage = ATTACK_MONTAGE.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> DAMAGED_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_Damaged_Montage.Kwang_Damaged_Montage'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DAMAGED_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_Hit_Montage.Kwang_Hit_Montage'"));
 	if (ATTACK_MONTAGE.Succeeded())
 	{
 		DamagedMontage = DAMAGED_MONTAGE.Object;
@@ -30,25 +30,42 @@ UMyAnimInstance::UMyAnimInstance()
 	{
 		RollMontage = ROLL_MONTAGE.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DRINKPOTION_MONTAGE(TEXT("AnimMontage'/Game/Animations/Player/Kwang_Drinking_Montage.Kwang_Drinking_Montage'"));
+	if (DRINKPOTION_MONTAGE.Succeeded())
+	{
+		DrinkPotionMontage = DRINKPOTION_MONTAGE.Object;
+	}
+
 #pragma endregion
+}
+
+void UMyAnimInstance::NativeInitializeAnimation()
+{
+	Super::NativeInitializeAnimation();
+
+	auto Pawn = TryGetPawnOwner();
+	if (!::IsValid(Pawn)) return;
+
+	MyPlayer = Cast<AMyPlayer>(Pawn);
+
+	if (MyPlayer)
+	{
+		MyPlayer->OnStartDrinkPotion.AddLambda([this]()->void {
+			IsDrinkingPotion = true;
+			});
+	}
+
 }
 
 void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
-	auto Pawn = TryGetPawnOwner();
-	if (!::IsValid(Pawn)) return;
-
-
-	if (!IsDead)
+	if (MyPlayer&&!IsDead)
 	{
-		CurrentPawnSpeed = Pawn->GetVelocity().Size(); //캐릭터 속도 판별.
-		auto Character = Cast<ACharacter>(Pawn);
-		if (Character)
-		{
-			IsInAir = Character->GetMovementComponent()->IsFalling(); //캐릭터가 공중에 떠있는지 판별.
-		}
+		CurrentPawnSpeed = MyPlayer->GetVelocity().Size(); //캐릭터 속도 판별.
+		IsInAir = MyPlayer->GetMovementComponent()->IsFalling(); //캐릭터가 공중에 떠있는지 판별.
 	}
 }
 
@@ -61,13 +78,19 @@ void UMyAnimInstance::PlayAttackMontage()
 void UMyAnimInstance::PlayDamagedMontage()
 {
 	if (IsDead) return;
-	Montage_Play(DamagedMontage, 0.01f);
+	Montage_Play(DamagedMontage, 1.0f);
 }
 
 void UMyAnimInstance::PlayRollMontage()
 {
 	if (IsDead) return;
 	Montage_Play(RollMontage, 1.0f);
+}
+
+void UMyAnimInstance::PlayDrinkPotion()
+{
+	if (IsDead) return;
+	Montage_Play(DrinkPotionMontage, 1.0f);
 }
 
 void UMyAnimInstance::JumpToAttackMontageSection(int32 NewSection)
@@ -89,6 +112,11 @@ void UMyAnimInstance::OnMyMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	else if(Montage == RollMontage)
 	{
 		OnRollEnd.Broadcast();
+	}
+	else if (Montage == DrinkPotionMontage)
+	{
+		OnDrinkPotionEnd.Broadcast();
+		IsDrinkingPotion = false;
 	}
 	else
 	{

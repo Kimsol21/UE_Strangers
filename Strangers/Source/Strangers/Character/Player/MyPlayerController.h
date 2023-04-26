@@ -35,7 +35,7 @@ public:
 	void RemoveCurrentPopup(); //가장 최근에 띄워진 팝업을 삭제합니다.
 
 	//아이템 관련	
-	UPROPERTY(VisibleAnywhere, Category = Item)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Item)
 		AItem_Interactable* CurrentInteractable;
 
 
@@ -86,7 +86,9 @@ private:
 	void CallInteract();
 	void CallInventory();
 	void CallRoll();
+	void CallDrinkPotion();
 	void PressX();
+	void CallLockOn();
 
 	//UI 관련 함수들
 	void AddPopup(UUserWidget& widget); //인자로 들어온 위젯을 화면에 띄웁니다.
