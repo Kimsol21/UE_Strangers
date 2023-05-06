@@ -25,6 +25,8 @@ UMyGameInstance::UMyGameInstance()
 	{
 		ItemTable = DT_Item.Object;
 	}
+
+	
 }
 
 FMyCharacterData* UMyGameInstance::GetMyCharacterData(int32 Level)
@@ -41,3 +43,8 @@ FItemData* UMyGameInstance::GetItemData(int32 ID)
 {
 	return ItemTable->FindRow<FItemData>(*FString::FromInt(ID), TEXT(""));
 }
+
+//FDialogueSystemData* UMyGameInstance::GetDialogueData(uint8 Index)
+//{
+//	return DialogueTable->FindRow<FDialogueSystemData>(*FString::FromInt(Index), TEXT(""));
+//}

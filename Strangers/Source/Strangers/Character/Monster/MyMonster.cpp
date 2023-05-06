@@ -15,8 +15,6 @@ AMyMonster::AMyMonster()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	
-
 	HPBarWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("HPBARWIDGET")); //HP바 위젯 컴포넌트 생성.
 	HPBarWidget->SetupAttachment(GetMesh());
 
@@ -49,6 +47,23 @@ AMyMonster::AMyMonster()
 		HPBarWidget->SetWidgetClass(UI_HUD.Class);
 		HPBarWidget->SetDrawSize(FVector2D(150.0f, 50.0f));
 	}
+
+	//락온 Circle UI
+	LockOnWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("LockOnWidget")); //HP바 위젯 컴포넌트 생성.
+	LockOnWidget->SetupAttachment(GetMesh());
+	LockOnWidget->SetWidgetSpace(EWidgetSpace::Screen);
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> UI_LOCKON(TEXT("WidgetBlueprint'/Game/UI/Monster/WG_LockOn.WG_LockOn_C'"));
+	if (UI_LOCKON.Succeeded())
+	{
+		LockOnWidget->SetWidgetClass(UI_LOCKON.Class);
+		LockOnWidget->SetDrawSize(FVector2D(35.0f, 35.0f));
+		
+	}
+	LockOnWidget->SetVisibility(false);
+	LockOnWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 110.0f));
+	
+
 
 	//AI 생성 옵션 설정 : 레벨에 배치하거나 새롭게 생성되는 MyMonster객체마다 MyAIController액터 생성.
 	AIControllerClass = AMyAIController::StaticClass();
@@ -107,6 +122,16 @@ void AMyMonster::PostInitializeComponents()
 		DeadEffect->OnSystemFinished.AddDynamic(this, &AMyMonster::OnEffectFinished);
 		});
 
+	//플레이어가 이 몬스터에게 락온중일때 델리게이트.
+	OnPlayerFocusOnThisDelegate.AddLambda([this]()->void {
+		LockOnWidget->SetVisibility(true);
+		});
+
+	//플레이어의 락온에서 벗어났을 때 델리게이트.
+	OnLockOnRemoveThisDelegate.AddLambda([this]()->void {
+		LockOnWidget->SetVisibility(false);
+		});
+
 	//AttackCheck노티파이 바인딩.
 	MonsterAnim->OnAttackHitCheck.AddUObject(this, &AMyMonster::AttackCheck); //MyAnim에서 만든 델리게이트에 MyCharacter함수 바인딩.
 }
@@ -117,13 +142,23 @@ void AMyMonster::BeginPlay()
 
 	//캐릭터 위젯 받아오기.
 	auto MonsterWidget = Cast<UMyMonsterWidget>(HPBarWidget->GetUserWidgetObject());
-	if (nullptr == MonsterWidget)
-	{
-		UE_LOG(LogTemp, Error, TEXT("MonsterWidget is null!"));
-		return;
-	}
+	if (nullptr == MonsterWidget) return;
+
 	MonsterWidget->BindMonsterStat(MyStat);
+	MonsterWidget->SetVisibility(ESlateVisibility::Collapsed);
+	
+	OnMonsterMeetPlayerDelegate.AddLambda([this, MonsterWidget]()->void {
+		MonsterWidget->SetVisibility(ESlateVisibility::Visible);
+		});
+
+	OnMonsterFartherAwayPlayerDelegate.AddLambda([this, MonsterWidget]()->void {
+		MonsterWidget->SetVisibility(ESlateVisibility::Collapsed);
+		});
+
+	
+
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -88.0f), FRotator(0.0, 0.0f, 0.0f)); //메쉬 위치조정.
+
 
 	GetCharacterMovement()->MaxWalkSpeed = MyStat->GetMoveSpeed(); //이동속도 조정
 }

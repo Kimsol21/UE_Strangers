@@ -8,7 +8,7 @@
 #include "DrawDebugHelpers.h" 
 #include "GameFramework/CharacterMovementComponent.h"
 
-const float AMyBoss::MaxHP(1000.0f);
+const float AMyBoss::MaxHP(100.0f);
 
 // Sets default values
 AMyBoss::AMyBoss() 
@@ -47,8 +47,6 @@ AMyBoss::AMyBoss()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("MyMonster")); // 내가 만든 콜리전 프리셋 사용.
-
-
 }
 
 void AMyBoss::PostInitializeComponents()
@@ -65,7 +63,7 @@ void AMyBoss::PostInitializeComponents()
 
 	BossAnim->OnBossAttackEnd.AddLambda([this]()->void {
 		bIsAttackEnded = true;
-		UE_LOG(LogTemp, Error, TEXT("OnBossAttackEndDelegate@@@@@@@@@@@@@@@"));
+		//UE_LOG(LogTemp, Error, TEXT("OnBossAttackEndDelegate@@@@@@@@@@@@@@@"));
 	});
 
 	BossAnim->OnChangeFlyingMode.AddLambda([this]()->void {
@@ -82,7 +80,7 @@ void AMyBoss::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	
+	//BossWidget->BindWidgetToBoss(this);
 }
 
 // Called every frame
@@ -98,7 +96,7 @@ float AMyBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 	
 	//CurrentHP
 
-	if (2 * (CurrentHP - FinalDamage) < MaxHP)//체력이 50퍼센트 이하로 떨어지면,
+	if (2 * (CurrentHP - FinalDamage) < MaxHP && 1==Phase)//체력이 50퍼센트 이하로 떨어지면,
 	{
 		Phase = 2;//2페이즈로 진입.
 		OnPhaseChanged.Broadcast();
@@ -111,7 +109,7 @@ float AMyBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 void AMyBoss::SetHP(const float& _NewHP) 
 { 
 	CurrentHP = _NewHP; 
-	OnBossHPChanged.Broadcast();
+	BossHPChangedEvent.Broadcast(CurrentHP / MaxHP); // 이벤트로 현재 HP 비율 전달. 
 
 	if (0 == CurrentHP)
 	{
@@ -119,23 +117,12 @@ void AMyBoss::SetHP(const float& _NewHP)
 	}
 }
 
-//void AMyBoss::SetFlyingMode()
-//{
-//	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-//}
-//
-//void AMyBoss::SetWalkingMode()
-//{
-//	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-//}
-
 void AMyBoss::ExecuteNormalAttack1()
 {
 	if (BossAnim)
 	{
 		BossAnim->MontagePlayNormalAttack1();
-	}
-	
+	}	
 
 	//공격관련데이터 설정.
 	bIsAttackEnded = false;

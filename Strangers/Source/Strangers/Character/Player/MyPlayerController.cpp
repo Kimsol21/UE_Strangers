@@ -8,6 +8,10 @@
 #include "Inventory/Item_Interactable.h"
 #include "UI/InventoryUserWidget.h"
 #include "UI/InventorySlotWidget.h"
+#include "UI/BossHPWidget.h"
+#include "Character/Boss/MyBoss.h"
+#include "Character/NPC/MyNPC.h"
+#include "UI/DialogueWidget.h"
 
 FInputModeGameAndUI InputGameAndUI; //둘다에 입력값 전달.
 FInputModeUIOnly InputUIOnly; //UI에만 입력값 전달.
@@ -45,6 +49,20 @@ AMyPlayerController::AMyPlayerController()
 		InventoryUserWidgetClass = UI_INVENTORY.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UBossHPWidget> UI_BOSSHP(TEXT("WidgetBlueprint'/Game/UI/Boss/UI_BossHUD.UI_BossHUD_C'"));
+	if (UI_BOSSHP.Succeeded())
+	{
+		BossHPClass = UI_BOSSHP.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UDialogueWidget> UI_DIALOGUE(TEXT("WidgetBlueprint'/Game/UI/Dialogue/WG_Dialogue.WG_Dialogue_C'"));
+	if (UI_DIALOGUE.Succeeded())
+	{
+		DialogueWidgetClass = UI_DIALOGUE.Class;
+	}
+
+
+
 }
 
 void AMyPlayerController::BeginPlay()
@@ -54,7 +72,7 @@ void AMyPlayerController::BeginPlay()
 	
 	SetInputMode(InputGameOnly);
 
-	possessedPawn = Cast<AMyPlayer>(GetPawn()); //빙의된 폰 가져오기.
+	possessedPawn = Cast<AMyPlayer>(GetPawn());
 	if (nullptr == possessedPawn) return;
 
 	//플레이어 정보 위젯
@@ -81,10 +99,49 @@ void AMyPlayerController::BeginPlay()
 	InventoryUserWidget->AddToViewport();
 	InventoryUserWidget->SetVisibility(ESlateVisibility::Collapsed);
 
+	//보스HP 위젯
+	BossHPWidget = CreateWidget<UBossHPWidget>(this, BossHPClass);
+	BossHPWidget->AddToViewport();
+	BossHPWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	//대화창 위젯
+	DialogueWidget = CreateWidget<UDialogueWidget>(this, DialogueWidgetClass);
+	DialogueWidget->AddToViewport();
+	DialogueWidget->SetVisibility(ESlateVisibility::Collapsed);
 	
+	
+	//플레이어가 NPC와 만났을 때 델리게이트.
+	possessedPawn->OnPlayerMeetNPC().AddLambda([this](AMyNPC* _NPC)->void {
+		AddPopup(*DialogueWidget);//UI에 추가.   
+		//DialogueWidget->SetVisibility(ESlateVisibility::Visible);
+		//_NPC->GetDialogueManagerComponent();
+		DialogueWidget->BindUIToDialogueManager(_NPC->GetDialogueManagerComponent());
+		});
+
+	//대화가 끝났을 때 델리게이트.
+	possessedPawn->OnDialogueFinished().AddLambda([this]()->void {
+		RemoveCurrentPopup();
+		});
+
+
+	//보스방 입장했을 때 델리게이트.
+	OnBossRoomEnterDelegate.AddLambda([this](AMyBoss* _Boss)->void {
+		_Boss->SetIsFighting(true); // 해당 보스의 전투를 On해준다. 
+		BossHPWidget->BindWidgetToBoss(_Boss); // 보스를 HPUI와 연결.
+		BossHPWidget->SetVisibility(ESlateVisibility::Visible); // HPUI 보이게 하기.
+		});
+
 
 	
 }
+
+////Pawn에 빙의되었을때 호출되는 함수. 
+//void AMyPlayerController::OnPossess(APawn* InPawn)
+//{
+//	possessedPawn = Cast<AMyPlayer>(InPawn); //빙의된 폰 가져오기.
+//	if (nullptr == possessedPawn) return;
+//
+//}
 
 // Called to bind functionality to input
 void AMyPlayerController::SetupInputComponent()
@@ -109,7 +166,25 @@ void AMyPlayerController::SetupInputComponent()
 
 }
 
+void AMyPlayerController::NextSentence()
+{
+	OnNextSentenceInputPressedEvent.Broadcast();
+}
+
 #pragma region InputBindFunctions
+
+//void AMyPlayerController::PressedAnyKey()
+//{
+//	if (possessedPawn)
+//	{
+//		if (possessedPawn->GetIsPlayerTalking())
+//		{
+//			OnAnyInputPressedEvent.Broadcast();
+//		}
+//	}
+//}
+
+
 
 void AMyPlayerController::CallLockOn()
 {
@@ -153,6 +228,7 @@ void AMyPlayerController::CallUpDown(float NewAxisValue)
 	if (possessedPawn)
 	{
 		possessedPawn->UpDown(NewAxisValue);
+
 	}
 }
 
@@ -227,11 +303,13 @@ void AMyPlayerController::AddPopup(UUserWidget& widget)
 {
 	PopupWidgetArray.Add(&widget); //팝업 위젯 배열에 위젯 추가. 
 	widget.SetVisibility(ESlateVisibility::Visible); //위젯 가시성 설정.
+	
 
 	if (1 == PopupWidgetArray.Num())//첫 팝업이면,
 	{
 		SetInputMode(InputUIOnly);//인풋모드 UI Only로 변경.
 		SetShowMouseCursor(true); //마우스 커서 보여주기.
+		possessedPawn->SetDoingSomething(true); // 플레이어 이동 차단.
 	}
 }
 
@@ -244,6 +322,7 @@ void AMyPlayerController::RemoveCurrentPopup()
 		{
 			SetInputMode(InputGameOnly);//인풋모드 UI Only로 변경.
 			SetShowMouseCursor(false); //마우스 커서 보여주기.
+			possessedPawn->SetDoingSomething(false); // 플레이어 이동 허용.
 		}
 
 		PopupWidgetArray.Top()->SetVisibility(ESlateVisibility::Collapsed); //위젯 안보이게 하기.

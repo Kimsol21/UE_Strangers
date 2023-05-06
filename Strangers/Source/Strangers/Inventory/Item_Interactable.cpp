@@ -25,7 +25,6 @@ AItem_Interactable::AItem_Interactable()
 
 	ItemMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 
-	
 
 }
 
@@ -63,7 +62,6 @@ FString AItem_Interactable::GetUseText() const //여기서의 const는 해당 함수가 속
 
 bool AItem_Interactable::SetItemData()
 {
-
 	if (UMyGameInstance* GI = Cast<UMyGameInstance>(GetWorld()->GetGameInstance())) //게임 인스턴스 가져오기.
 	{
 		ItemData = GI->GetItemData(ID); //데이터 테이블 가져오기. 

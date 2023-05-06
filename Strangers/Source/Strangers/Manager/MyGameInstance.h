@@ -96,8 +96,6 @@ public:
 };
 
 
-
-
 UCLASS()
 class STRANGERS_API UMyGameInstance : public UGameInstance //게임 데이터 관리
 {
@@ -109,6 +107,8 @@ public:
 	FMyCharacterData* GetMyCharacterData(int32 Level);
 	FMyMonsterData* GetMyMonsterData(int32 ID);
 	FItemData* GetItemData(int32 ID);
+	//FDialogueSystemData* GetDialogueData(uint8 Index);
+
 
 private:
 
@@ -120,4 +120,6 @@ private:
 
 	UPROPERTY()
 	class UDataTable* ItemTable;
+
+	
 };

@@ -10,6 +10,8 @@
 #include "Character/Player/MyPlayerStatComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Character/Monster/MyMonster.h"
 
 #pragma region Init Function
 
@@ -31,6 +33,7 @@ AMyPlayer::AMyPlayer()
 	Camera->SetRelativeLocation(FVector(0.0f, 100.0f, 0.0f));
 
 	//에셋 불러오기.
+	//스켈레탈메쉬
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SM_KWANG(TEXT("SkeletalMesh'/Game/Assets/ParagonKwang/Characters/Heroes/Kwang/Meshes/KwangRosewood.KwangRosewood'"));
 	if (SM_KWANG.Succeeded())
 	{
@@ -38,6 +41,7 @@ AMyPlayer::AMyPlayer()
 	}
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 
+	//애님블루프린트.
 	static ConstructorHelpers::FClassFinder<UAnimInstance> ABP_KWANG(TEXT("AnimBlueprint'/Game/Animations/Player/Kwang_AnimBlueprint.Kwang_AnimBlueprint_C'")); //클래스정보 가져오기.
 	if (ABP_KWANG.Succeeded())
 	{
@@ -68,19 +72,17 @@ AMyPlayer::AMyPlayer()
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("MyCharacter"));//내가 만든 콜리전 프리셋 사용.
 
-
-
 	//락온 LockOn 관련 변수 초기화.
 	bIsLockedOn = false;
 	TargettingHeightOffset = 20.0f;
 	LockedOnCharacter = nullptr;
 
 	TargetCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TargetCollisionBox"));
-	TargetCollisionBox->SetBoxExtent(FVector(400.0f, 400.0f, 300.0f)); //콜리전 감지 범위 설정.
+	TargetCollisionBox->SetBoxExtent(FVector(2400.0f, 700.0f, 10.0f)); //콜리전 감지 범위 설정.
+	//TargetCollisionBox->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f)); // 콜리전 위치 설정.
 	TargetCollisionBox->SetCollisionProfileName(TEXT("OnlyPawnDetacted")); //콜리전 프리셋 설정.
-	TargetCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionBeginOverlap); //콜리전 오버랩 델리게이트에 함수 바인딩.
-	TargetCollisionBox->OnComponentEndOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionEndOverlap);
-
+	
+	TargetCollisionBox->SetupAttachment(GetCapsuleComponent());
 
 
 	//스테미나 관련 변수 초기화.
@@ -88,6 +90,22 @@ AMyPlayer::AMyPlayer()
 	CurrentStamina = MaxStamina; //현재 스테미나 값.
 	bCanStaminaRecharge = true; // 스테미나가 재 충전 될 수 있는지 여부.
 	bIsSprinting = false; // 전력질주 중인지 여부.
+
+
+	//이펙트 재생
+	LevelupEffect = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("LEVEL_EFFECT"));//이펙트 파티클 설정.
+	LevelupEffect->SetupAttachment(GetMesh());
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> P_DAMAGED(TEXT("ParticleSystem'/Game/FX/Particle_LevelUp.Particle_LevelUp'"));
+	if (P_DAMAGED.Succeeded())
+	{
+		LevelupEffect->SetTemplate(P_DAMAGED.Object);
+		LevelupEffect->bAutoActivate = false;
+	}
+
+	//LevelupEffect->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	LevelupEffect->SetRelativeScale3D(FVector(0.6, 0.6, 0.6));
+
 }
 
 void AMyPlayer::PostInitializeComponents()
@@ -100,7 +118,8 @@ void AMyPlayer::PostInitializeComponents()
 		UE_LOG(LogTemp, Error, TEXT("MyAnim is null!"));
 		return;
 	}
-	//MyAnim->OnMontageEnded.AddDynamic(this, &AMyPlayer::OnMyMontageEnded); //AnimInstance의 델리게이트 OnMontageEnded에 My함수 바인딩.
+
+	//공격이 끝났을 때 호출되는 함수.
 	MyAnim->OnAttackEnd.AddLambda([this]()->void {
 		bIsAttacking = false;//공격이 끝났음을 알림.
 		bDoingSomething = false;
@@ -109,6 +128,7 @@ void AMyPlayer::PostInitializeComponents()
 		CurrentCombo = 0; //콤보공격 끝, 콤보 0으로 초기화.s
 		});
 
+	//구르기가 끝났을 때 호출되는 함수.
 	MyAnim->OnRollEnd.AddLambda([this]()->void {
 		bIsInvincible = false;
 		bDoingSomething = false;
@@ -117,6 +137,7 @@ void AMyPlayer::PostInitializeComponents()
 		bDoingSomething = false;
 		});
 
+	//포션을 먹기가 끝났을 때 호출되는 함수.
 	MyAnim->OnDrinkPotionEnd.AddLambda([this]()->void {
 		GetCharacterMovement()->MaxWalkSpeed *=5; //원래 이동속도로 복귀.
 		bDoingSomething = false; // 행동중인지 여부를 false로 설정.
@@ -144,9 +165,27 @@ void AMyPlayer::PostInitializeComponents()
 		SetActorEnableCollision(false);
 		});
 
+	//캐릭터가 레벨업했을 때.
+	MyStat->OnLevelUp.AddLambda([this]()->void {
+		LevelupEffect->Activate(true);
+		});
 
+	//플레이어가 NPC와 만났을 때 델리게이트.
+	OnPlayerMeetNPCDelegate.AddLambda([this](AMyNPC* _NPC)->void {
+		CurrentNPC = _NPC; 
+		bIsPlayerTalking = true;
+		
+		//DialogueWidget->SetVisibility(ESlateVisibility::Visible);
+		//_NPC->GetDialogueManagerComponent();
+		});
 
-	
+	OnDialogueFinishedDelegate.AddLambda([this]()->void {
+		bIsPlayerTalking = false;
+		});
+
+	//락온 범위를 감지할 오버랩 이벤트.
+	TargetCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionBeginOverlap); //콜리전 오버랩 델리게이트에 함수 바인딩.
+	TargetCollisionBox->OnComponentEndOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionEndOverlap);
 
 }
 
@@ -247,7 +286,11 @@ void AMyPlayer::OnTargetCollisionBeginOverlap(UPrimitiveComponent* OverlappedCom
 	if (OverlappedCharacter)
 	{
 		//락온 가능한 범위안에 들어오면 지원자 배열에 추가.
-		LockOnCandidates.AddUnique(OverlappedCharacter); //AddUnique : 기존 컨테이너에 동일한 엘리먼트가 이미 존재하는 경우는 추가안함. 
+		LockOnCandidates.AddUnique(OverlappedCharacter); //AddUnique : 기존 컨테이너에 동일한 엘리먼트가 이미 존재하는 경우는 추가안함.  
+		if (AMyMonster* Monster = Cast<AMyMonster>(OverlappedCharacter))
+		{
+			Monster->OnMonsterMeetPlayer().Broadcast();
+		}
 	}
 }
 
@@ -258,6 +301,10 @@ void AMyPlayer::OnTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp,
 	{
 		//범위에서 벗어나면 락온 지원자에서 탈락.
 		LockOnCandidates.Remove(OverlappedCharacter); 
+		if (AMyMonster* Monster = Cast<AMyMonster>(OverlappedCharacter))
+		{
+			Monster->OnMonsterFartherAwayPlayer().Broadcast(); 
+		}
 	}
 }
 
@@ -273,17 +320,18 @@ void AMyPlayer::CheckForInteractables()
 
 
 	bool result = GetWorld()->LineTraceSingleByChannel(HitResult, StartTrace, EndTrace, ECC_Visibility, QueryParams);
-	if (MyPlayerController && result)
+	if (MyPlayerController)
 	{
-
-		if (AItem_Interactable* Interactable = Cast<AItem_Interactable>(HitResult.GetActor()))
+		if (result)
 		{
-			MyPlayerController->SetCurrentInteractableItem(Interactable);
-			return;
+			if (AItem_Interactable* Interactable = Cast<AItem_Interactable>(HitResult.GetActor()))
+			{
+				MyPlayerController->SetCurrentInteractableItem(Interactable);
+				return;
+			}
 		}
+		MyPlayerController->SetCurrentInteractableItem(nullptr);
 	}
-	MyPlayerController->SetCurrentInteractableItem(nullptr);
-
 }
 
 
@@ -374,6 +422,13 @@ void AMyPlayer::LockOn()
 	if (bIsLockedOn) // 이미 락온중인 상태였다면
 	{
 		bIsLockedOn = false; //락온 해제.
+
+
+		if (AMyMonster* MyMonster = Cast<AMyMonster>(LockedOnCharacter))
+		{
+			MyMonster->OnLockOnRemoveThis().Broadcast();
+		}
+
 		LockedOnCharacter = nullptr; // 락온되어있던 캐릭터 null처리.
 	}
 	else
@@ -385,6 +440,12 @@ void AMyPlayer::LockOn()
 			if (LockedOnCharacter) // 락온캐릭터가 유효하다면,
 			{
 				bIsLockedOn = true; // 락온중임을 true로 설정.
+				
+				//만약 락온중인 캐릭터가 몬스터라면,
+				if (AMyMonster* MyMonster = Cast<AMyMonster>(LockedOnCharacter))
+				{
+					MyMonster->OnPlayerFocusOnThis().Broadcast();
+				}
 			}
 		}
 	}
@@ -477,4 +538,3 @@ void AMyPlayer::SetEXP(float _NewEXP)
 {
 	MyStat->SetEXP(_NewEXP);
 }
-

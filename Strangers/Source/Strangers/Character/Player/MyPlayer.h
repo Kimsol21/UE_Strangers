@@ -11,8 +11,15 @@
 #include "MyPlayer.generated.h"
 
 class UInventoryComponent;
+class AMyPlayerController;
+class AMyNPC;
 
 DECLARE_MULTICAST_DELEGATE(FOnStartDrinkPotionDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnDialogueFinishedDelegate);
+//DECLARE_EVENT(AMyPlayer, FOnPlayerMeetNPCEvent);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerMeetNPCDelegate, AMyNPC*);
+
+
 
 /**
  * 
@@ -32,6 +39,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
 	virtual void AttackCheck() override;
 
 	virtual void SetDamage(float _Damage) override;
@@ -39,13 +47,13 @@ protected:
 
 
 public:
-	class AMyPlayerController* MyPlayerController;
+	AMyPlayerController* GetPlayerController() const{ return MyPlayerController; };
+	AMyPlayerController* MyPlayerController;
 
 	UInventoryComponent* GetMyInventoryComponent() const{ return MyInventory; };
 	bool GetDoingSomething() const { return bDoingSomething; };
-	bool GetIsDrinkPotion() const { 
-		UE_LOG(LogTemp, Error, TEXT("GetIsDrinkPotion is Called : %d !!!!!!!!!"), bIsDrinkPotion);
-		return bIsDrinkPotion; };
+	void SetDoingSomething(bool _bDoingSomething) { bDoingSomething = _bDoingSomething; };
+	bool GetIsDrinkPotion() const { return bIsDrinkPotion; };
 
 	
 
@@ -64,7 +72,7 @@ public:
 	class AMyWeapon* CurrentWeapon;	
 
 	UPROPERTY(VisibleAnywhere, Category = Stat)
-		class UMyPlayerStatComponent* MyStat;
+	class UMyPlayerStatComponent* MyStat;
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 		USpringArmComponent* SpringArm;
@@ -94,7 +102,27 @@ public:
 	UFUNCTION()
 	void OnTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	FOnPlayerMeetNPCDelegate& OnPlayerMeetNPC() { return OnPlayerMeetNPCDelegate; };
+	
+	bool GetIsPlayerTalking() const{ return bIsPlayerTalking; };
+
+	FOnDialogueFinishedDelegate& OnDialogueFinished() { return OnDialogueFinishedDelegate; };
+
 private:
+	FOnDialogueFinishedDelegate OnDialogueFinishedDelegate;
+
+	//플레이어가 대화를 시작했는지.
+	bool bIsPlayerTalking;
+
+	UPROPERTY()
+	class AMyNPC* CurrentNPC;
+
+	FOnPlayerMeetNPCDelegate OnPlayerMeetNPCDelegate;
+
+	//레벨업 이펙트
+	UPROPERTY(VisibleAnywhere, Category = Effect)
+	UParticleSystemComponent* LevelupEffect;
+
 
 	void CheckForInteractables();
 

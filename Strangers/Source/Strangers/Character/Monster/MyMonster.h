@@ -6,6 +6,13 @@
 #include "Character/MyCharacter.h"
 #include "MyMonster.generated.h"
 
+
+DECLARE_MULTICAST_DELEGATE(FOnMonsterMeetPlayerDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnMonsterFartherAwayPlayerDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnPlayerFocusOnThisDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnLockOnRemoveThisDelegate);
+
+
 /**
  * 
  */
@@ -21,6 +28,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = UI)
 		class UWidgetComponent* HPBarWidget;
 
+	UPROPERTY(VisibleAnywhere, Category = UI)
+		class UWidgetComponent* LockOnWidget;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
 		class UMyMonsterStatComponent* MyStat;
 
@@ -31,10 +41,15 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Effect)
 		UParticleSystemComponent* DamagedEffect;
 
+	
+
 	UFUNCTION()
 		void OnEffectFinished(class UParticleSystemComponent* PSystem);
 
-	
+	FOnMonsterMeetPlayerDelegate& OnMonsterMeetPlayer() { return OnMonsterMeetPlayerDelegate; };
+	FOnMonsterFartherAwayPlayerDelegate& OnMonsterFartherAwayPlayer() { return OnMonsterFartherAwayPlayerDelegate; };
+	FOnPlayerFocusOnThisDelegate& OnPlayerFocusOnThis() { return OnPlayerFocusOnThisDelegate; };
+	FOnLockOnRemoveThisDelegate& OnLockOnRemoveThis() { return OnLockOnRemoveThisDelegate; };
 
 protected:
 	// Called when the game starts or when spawned
@@ -48,6 +63,11 @@ protected:
 	
 
 private:
+	FOnMonsterMeetPlayerDelegate OnMonsterMeetPlayerDelegate;
+	FOnMonsterFartherAwayPlayerDelegate OnMonsterFartherAwayPlayerDelegate;
+	FOnPlayerFocusOnThisDelegate OnPlayerFocusOnThisDelegate;
+	FOnLockOnRemoveThisDelegate OnLockOnRemoveThisDelegate;
+
 	UPROPERTY()
 	class UMonster_AnimInstance* MonsterAnim; //캐릭터클래스에서 애님 인스턴스는 자주 사용하므로 멤버변수로 선언한다.
 
