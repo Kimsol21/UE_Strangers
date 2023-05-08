@@ -55,7 +55,7 @@ public:
 	void SetDoingSomething(bool _bDoingSomething) { bDoingSomething = _bDoingSomething; };
 	bool GetIsDrinkPotion() const { return bIsDrinkPotion; };
 
-	
+	void SetPlayerHidden(bool _bHidden);
 
 	void SetEXP(float _NewEXP);
 

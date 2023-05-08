@@ -6,10 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "MyBossEntrance.generated.h"
 
-class AMyBoss;
+
 class UBoxComponent;
 
-
+DECLARE_EVENT(AMyBossGameModeBase, FOnCinematicEndEvent);
 
 UCLASS()
 class STRANGERS_API AMyBossEntrance : public AActor
@@ -30,13 +30,31 @@ public:
 	/*UFUNCTION()
 	void OnTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);*/
 
+	FOnCinematicEndEvent& OnCinematicEnd() { return OnCinematicEndEvent; };
+
+	//레벨 시퀀스 에셋
+	UPROPERTY(EditAnywhere, Category = "Sequence")
+	class ALevelSequenceActor* BossStartSequenceActor;
+
+	// 싸울 보스.
+	UPROPERTY(VisibleAnywhere, Category = "Entrance")
+	class AMyBoss* BossToFight;
 	
-	UPROPERTY(EditAnywhere, Category = "Entrance")
-	AMyBoss* BossToFight; // 들어가고자 하는 보스.
+	UFUNCTION()
+	void OnStartCinematicFinished();
+
+protected:
+	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Entrance")
 	UBoxComponent* PlayerCollisionBox; // 플레이어를 감지할 콜리전.
+
+	//시퀀스 플레이어
+	UPROPERTY(VisibleAnywhere, Category = "Sequence")
+	class ULevelSequencePlayer* SequencePlayer;
+
+	FOnCinematicEndEvent OnCinematicEndEvent;
 
 	
 

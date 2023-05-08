@@ -7,6 +7,7 @@
 #include "Animation/MyBossAnimInstance.h"
 #include "DrawDebugHelpers.h" 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/WidgetComponent.h"
 
 const float AMyBoss::MaxHP(100.0f);
 
@@ -47,6 +48,22 @@ AMyBoss::AMyBoss()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("MyMonster")); // 내가 만든 콜리전 프리셋 사용.
+
+
+	//락온 Circle UI
+	LockOnWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("LockOnWidget")); //락온 위젯 생성.
+	LockOnWidget->SetupAttachment(GetMesh());
+	LockOnWidget->SetWidgetSpace(EWidgetSpace::Screen);
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> UI_LOCKON(TEXT("WidgetBlueprint'/Game/UI/Monster/WG_LockOn.WG_LockOn_C'"));
+	if (UI_LOCKON.Succeeded())
+	{
+		LockOnWidget->SetWidgetClass(UI_LOCKON.Class);
+		LockOnWidget->SetDrawSize(FVector2D(35.0f, 35.0f));
+
+	}
+	LockOnWidget->SetVisibility(false);
+	LockOnWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 110.0f));
 }
 
 void AMyBoss::PostInitializeComponents()

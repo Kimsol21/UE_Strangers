@@ -74,7 +74,7 @@ AMyPlayer::AMyPlayer()
 
 	//락온 LockOn 관련 변수 초기화.
 	bIsLockedOn = false;
-	TargettingHeightOffset = 20.0f;
+	TargettingHeightOffset = 25.0f;
 	LockedOnCharacter = nullptr;
 
 	TargetCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TargetCollisionBox"));
@@ -179,9 +179,14 @@ void AMyPlayer::PostInitializeComponents()
 		//_NPC->GetDialogueManagerComponent();
 		});
 
+	//NPC와의 대화가 끝났을 때 델리게이트.
 	OnDialogueFinishedDelegate.AddLambda([this]()->void {
 		bIsPlayerTalking = false;
 		});
+
+	
+
+
 
 	//락온 범위를 감지할 오버랩 이벤트.
 	TargetCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AMyPlayer::OnTargetCollisionBeginOverlap); //콜리전 오버랩 델리게이트에 함수 바인딩.
@@ -199,6 +204,17 @@ void AMyPlayer::BeginPlay()
 	{
 		MyPlayerController->SetControlRotation(FRotator(-15.0f, 0.0f, 0.0f)); //컨트롤 회전 기본값 지정. (초기 카메라 각도 조정)
 	}
+	  
+	//시네마틱 재생이 시작될 때 델리게이트.
+	MyPlayerController->OnLevelSequenceStart().AddLambda([this]()->void {
+		SetPlayerHidden(true);
+		});
+
+	//보스 시네마틱 재생이 끝나고 보스전이 시작될 때 델리게이트.
+	MyPlayerController->OnBossRoomEnter().AddLambda([this](AMyBoss* BossToFight)->void {
+		SetPlayerHidden(false);
+		});
+
 
 	//제작한 무기 클래스 캐릭터에 부착.
 	FName WeaponSocket(TEXT("FX_weapon_base"));
@@ -537,4 +553,10 @@ bool AMyPlayer::HasAnyWeapon()
 void AMyPlayer::SetEXP(float _NewEXP)
 {
 	MyStat->SetEXP(_NewEXP);
+}
+
+void AMyPlayer::SetPlayerHidden(bool _bHidden)
+{
+	this->SetActorHiddenInGame(_bHidden);
+	CurrentWeapon->SetActorHiddenInGame(_bHidden);
 }

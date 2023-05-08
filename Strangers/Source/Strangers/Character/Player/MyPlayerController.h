@@ -22,6 +22,8 @@ class UDialogueWidget;
  */
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnBossRoomEnterDelegate, AMyBoss*);
+DECLARE_MULTICAST_DELEGATE(FOnLevelSequenceStartDelegate);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnNoticeUpdateDelegate, const FString&);
 DECLARE_EVENT(AMyPlayerController, FOnNextSentenceInputPressedEvent);
 
 UCLASS()
@@ -33,6 +35,8 @@ public:
 	AMyPlayerController();
 
 public:
+	void SetPlayerHUDVisibility(bool _bVisible);
+
 	AMyPlayer* GetPossessedPawn() const { return possessedPawn; };
 	UInventorySlotWidget* GetInventorySlotWidget() const { return InventorySlotWidget; };
 
@@ -48,10 +52,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Item)
 	AItem_Interactable* CurrentInteractable;
 
-
 	//이벤트 Get함수.
 	FOnBossRoomEnterDelegate& OnBossRoomEnter() { return OnBossRoomEnterDelegate; };
 	FOnNextSentenceInputPressedEvent& OnNextSentenceInputPressed() { return OnNextSentenceInputPressedEvent; };
+	FOnNoticeUpdateDelegate& OnNoticeUpdate() { return OnNoticeUpdateDelegate; };
+	FOnLevelSequenceStartDelegate& OnLevelSequenceStart() { return OnLevelSequenceStartDelegate; };
 
 protected:
 	virtual void BeginPlay() override;
@@ -59,10 +64,10 @@ protected:
 	/*virtual void OnPossess(APawn* InPawn) override;*/
 	
 private:
-	
-
-	FOnNextSentenceInputPressedEvent OnNextSentenceInputPressedEvent;
+	FOnNextSentenceInputPressedEvent OnNextSentenceInputPressedEvent; //대화 중 다음 대화출력 인풋이 들어왔을 때 이벤트.
 	FOnBossRoomEnterDelegate OnBossRoomEnterDelegate; // 플레이어가 콜리전안에 들어왔을 때 이벤트.
+	FOnNoticeUpdateDelegate OnNoticeUpdateDelegate; // 알림 UI가 업데이트될 때 델리게이트.
+	FOnLevelSequenceStartDelegate OnLevelSequenceStartDelegate; // 시네마틱 시작 직전 델리게이트.
 
 	AMyPlayer* possessedPawn;
 
@@ -94,6 +99,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	TSubclassOf<UDialogueWidget> DialogueWidgetClass;
 	UDialogueWidget* DialogueWidget; //대화 위젯.
+
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+	TSubclassOf<class UMyNoticeWidget> NoticeWidgetClass;
+	UMyNoticeWidget* NoticeWidget; //대화 위젯.
 
 	TArray<UUserWidget*> PopupWidgetArray; //Popup 배열.
 

@@ -12,6 +12,8 @@
 #include "Character/Boss/MyBoss.h"
 #include "Character/NPC/MyNPC.h"
 #include "UI/DialogueWidget.h"
+#include "UI/MyNoticeWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 FInputModeGameAndUI InputGameAndUI; //둘다에 입력값 전달.
 FInputModeUIOnly InputUIOnly; //UI에만 입력값 전달.
@@ -61,7 +63,11 @@ AMyPlayerController::AMyPlayerController()
 		DialogueWidgetClass = UI_DIALOGUE.Class;
 	}
 
-
+	static ConstructorHelpers::FClassFinder<UMyNoticeWidget> UI_NOTICE(TEXT("WidgetBlueprint'/Game/UI/Notice/NoticePopup.NoticePopup_C'"));
+	if (UI_NOTICE.Succeeded())
+	{
+		NoticeWidgetClass = UI_NOTICE.Class;
+	}
 
 }
 
@@ -108,6 +114,12 @@ void AMyPlayerController::BeginPlay()
 	DialogueWidget = CreateWidget<UDialogueWidget>(this, DialogueWidgetClass);
 	DialogueWidget->AddToViewport();
 	DialogueWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	//Notice 위젯
+	NoticeWidget = CreateWidget<UMyNoticeWidget>(this, NoticeWidgetClass);
+	NoticeWidget->AddToViewport();
+	NoticeWidget->SetVisibility(ESlateVisibility::Collapsed);
+	NoticeWidget->BindUIToMyController(*this);
 	
 	
 	//플레이어가 NPC와 만났을 때 델리게이트.
@@ -123,15 +135,24 @@ void AMyPlayerController::BeginPlay()
 		RemoveCurrentPopup();
 		});
 
+	//시네마틱 시작 직전 델리게이트.
+	OnLevelSequenceStartDelegate.AddLambda([this]()->void {
+		//UI 숨기기.
+		SetPlayerHUDVisibility(false);
+		});
 
-	//보스방 입장했을 때 델리게이트.
+	//시네마틱이 끝나고 보스전 시작 했을 때 델리게이트.
 	OnBossRoomEnterDelegate.AddLambda([this](AMyBoss* _Boss)->void {
+		SetPlayerHUDVisibility(true);
 		_Boss->SetIsFighting(true); // 해당 보스의 전투를 On해준다. 
 		BossHPWidget->BindWidgetToBoss(_Boss); // 보스를 HPUI와 연결.
 		BossHPWidget->SetVisibility(ESlateVisibility::Visible); // HPUI 보이게 하기.
 		});
 
-
+	//알림창이 업데이트될 때 델리게이트.
+	OnNoticeUpdateDelegate.AddLambda([this](const FString& _NoticeString)->void {
+		AddPopup(*NoticeWidget);
+		});
 	
 }
 
@@ -328,4 +349,19 @@ void AMyPlayerController::RemoveCurrentPopup()
 		PopupWidgetArray.Top()->SetVisibility(ESlateVisibility::Collapsed); //위젯 안보이게 하기.
 		PopupWidgetArray.Pop(); //배열에서 탈락시키기.
 	}
+}
+
+void AMyPlayerController::SetPlayerHUDVisibility(bool _bVisible)
+{
+	if (_bVisible)
+	{
+		UserInfoWidget->SetVisibility(ESlateVisibility::Visible);
+		SkillWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+	else
+	{
+		UserInfoWidget->SetVisibility(ESlateVisibility::Collapsed);
+		SkillWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
 }

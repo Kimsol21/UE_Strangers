@@ -36,6 +36,7 @@ public:
 	FBossHPChangedEvent& OnBossHPChanged() { return BossHPChangedEvent; }
 
 
+
 	virtual void Tick(float DeltaTime) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;//액터가 받은 대미지를 처리하는 로직을 추가하기 위해 오버라이드.
 
@@ -68,6 +69,9 @@ public:
 	FOnPhaseChangedDelegate OnPhaseChanged;
 
 private:
+	UPROPERTY(VisibleAnywhere, Category = UI)
+		class UWidgetComponent* LockOnWidget;
+
 	bool bIsFighting; // 보스전이 시작되었는지.
 
 	FBossHPChangedEvent BossHPChangedEvent;
