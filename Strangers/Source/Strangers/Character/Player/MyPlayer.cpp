@@ -12,6 +12,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Character/Monster/MyMonster.h"
+#include "Components/LockOnComponent.h"
+#include "Character/Boss/MyBoss.h"
 
 #pragma region Init Function
 
@@ -78,7 +80,7 @@ AMyPlayer::AMyPlayer()
 	LockedOnCharacter = nullptr;
 
 	TargetCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TargetCollisionBox"));
-	TargetCollisionBox->SetBoxExtent(FVector(2400.0f, 700.0f, 10.0f)); //콜리전 감지 범위 설정.
+	TargetCollisionBox->SetBoxExtent(FVector(2400.0f, 2400.0f, 10.0f)); //콜리전 감지 범위 설정.
 	//TargetCollisionBox->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f)); // 콜리전 위치 설정.
 	TargetCollisionBox->SetCollisionProfileName(TEXT("OnlyPawnDetacted")); //콜리전 프리셋 설정.
 	
@@ -211,7 +213,7 @@ void AMyPlayer::BeginPlay()
 		});
 
 	//보스 시네마틱 재생이 끝나고 보스전이 시작될 때 델리게이트.
-	MyPlayerController->OnBossRoomEnter().AddLambda([this](AMyBoss* BossToFight)->void {
+	MyPlayerController->OnBossFightStart().AddLambda([this](AMyBoss* BossToFight)->void {
 		SetPlayerHidden(false);
 		});
 
@@ -437,15 +439,20 @@ void AMyPlayer::LockOn()
 {
 	if (bIsLockedOn) // 이미 락온중인 상태였다면
 	{
-		bIsLockedOn = false; //락온 해제.
-
-
+		
+		//추후에 Boss랑 Monster묶어서 관리하기.
 		if (AMyMonster* MyMonster = Cast<AMyMonster>(LockedOnCharacter))
 		{
-			MyMonster->OnLockOnRemoveThis().Broadcast();
+			//MyMonster->OnLockOnRemoveThis().Broadcast();
+			MyMonster->GetLockOnComponent().OnLockOnRemove().Broadcast();
+		}
+		else if (AMyBoss* MyBoss = Cast<AMyBoss>(LockedOnCharacter))
+		{
+			//MyMonster->OnLockOnRemoveThis().Broadcast();
+			MyBoss->GetLockOnComponent().OnLockOnRemove().Broadcast();
 		}
 
-		LockedOnCharacter = nullptr; // 락온되어있던 캐릭터 null처리.
+		RemoveLockOn();
 	}
 	else
 	{
@@ -460,8 +467,16 @@ void AMyPlayer::LockOn()
 				//만약 락온중인 캐릭터가 몬스터라면,
 				if (AMyMonster* MyMonster = Cast<AMyMonster>(LockedOnCharacter))
 				{
-					MyMonster->OnPlayerFocusOnThis().Broadcast();
+					
+					//MyMonster->OnPlayerFocusOnThis().Broadcast();
+					
+					MyMonster->GetLockOnComponent().OnLockOnExcute().Broadcast();
 				}
+				else if (AMyBoss* MyBoss = Cast<AMyBoss>(LockedOnCharacter))
+				{
+					MyBoss->GetLockOnComponent().OnLockOnExcute().Broadcast();
+				}
+
 			}
 		}
 	}
@@ -559,4 +574,10 @@ void AMyPlayer::SetPlayerHidden(bool _bHidden)
 {
 	this->SetActorHiddenInGame(_bHidden);
 	CurrentWeapon->SetActorHiddenInGame(_bHidden);
+}
+
+void AMyPlayer::RemoveLockOn()
+{
+	bIsLockedOn = false; //락온 해제.
+	LockedOnCharacter = nullptr; // 락온되어있던 캐릭터 null처리.
 }

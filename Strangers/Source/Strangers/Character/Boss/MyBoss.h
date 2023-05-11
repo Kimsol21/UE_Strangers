@@ -12,8 +12,8 @@ class UMyBossAnimInstance;
 //DECLARE_EVENT_OneParam(AMyBoss, FBossHPChangedEvent, float);
 
 DECLARE_MULTICAST_DELEGATE(FOnPhaseChangedDelegate);
-DECLARE_MULTICAST_DELEGATE(FOnBossHPIsZeroDelegate);
 
+DECLARE_EVENT(AMyBoss, FOnBossHPIsZeroEvent);
 DECLARE_EVENT_OneParam(AMyBoss, FBossHPChangedEvent, float);
 
 UCLASS()
@@ -28,22 +28,14 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override; //Actor 컴포넌트가 완전히 초기화된 이후 호출된다.게임 플레이 중에만 호출
 
-	//피격 관련 함수.
-	/*virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-	virtual void SetDamage(float _Damage) override;
-	virtual float GetAttackPower() override;*/
 public:	
 	FBossHPChangedEvent& OnBossHPChanged() { return BossHPChangedEvent; }
-
-
 
 	virtual void Tick(float DeltaTime) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;//액터가 받은 대미지를 처리하는 로직을 추가하기 위해 오버라이드.
 
 	//공격패턴 관련 함수.
 	//void PerformAttackPattern_1(); 
-
-
 
 public:
 	uint8 GetPhase() const { return Phase; };
@@ -55,9 +47,6 @@ public:
 	void ExecuteNormalAttack2();
 	void ExecuteNormalAttack3();
 
-	//UPROPERTY(Category = UI)
-	//UWidgetComponent* BossHUDWidget; // 보스전 관련 HUD.
-
 	//이펙트 관련.
 	/*UPROPERTY(VisibleDefaultsOnly, Category = Effect)
 	UParticleSystemComponent* DeadEffect; 
@@ -65,12 +54,16 @@ public:
 	UFUNCTION()
 	void OnEffectFinished(class UParticleSystemComponent* PSystem);*/
 
-	FOnBossHPIsZeroDelegate OnBossHPIsZero;
+	
 	FOnPhaseChangedDelegate OnPhaseChanged;
 
+	FOnBossHPIsZeroEvent& OnBossHPIsZero() { return OnBossHPIsZeroEvent; };
+	class ULockOnComponent& GetLockOnComponent() const { return *LockOnComponent; };
 private:
-	UPROPERTY(VisibleAnywhere, Category = UI)
-		class UWidgetComponent* LockOnWidget;
+	FOnBossHPIsZeroEvent OnBossHPIsZeroEvent;
+
+	UPROPERTY(VisibleAnywhere, Category = LockOn)
+	class ULockOnComponent* LockOnComponent;
 
 	bool bIsFighting; // 보스전이 시작되었는지.
 

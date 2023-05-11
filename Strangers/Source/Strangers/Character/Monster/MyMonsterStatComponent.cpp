@@ -42,8 +42,13 @@ void UMyMonsterStatComponent::SetNewMonster(int32 _ID)
 	if (nullptr != CurrentStatData)
 	{
 		ID = _ID;
-		SetHP(CurrentStatData->MaxHP); //레벨업 시 풀피
+		SetHPFull();
 	}
+}
+
+void UMyMonsterStatComponent::SetHPFull()
+{
+	SetHP(CurrentStatData->MaxHP); 
 }
 
 void UMyMonsterStatComponent::SetHP(float NewHP)

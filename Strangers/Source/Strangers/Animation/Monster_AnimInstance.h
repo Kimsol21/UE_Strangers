@@ -21,6 +21,7 @@ public:
 	UMonster_AnimInstance();
 	
 	void SetDeadAnim() { IsDead = true; }
+	void RestartAnimLogic() { IsDead = false; };
 	void PlayAttackMontage();
 	void PlayDamagedMontage();
 

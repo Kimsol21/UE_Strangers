@@ -22,7 +22,6 @@ AMyBossEntrance::AMyBossEntrance()
 	PlayerCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TargetCollisionBox")); //콜리전 생성.
 	PlayerCollisionBox->SetBoxExtent(FVector(400.0f, 400.0f, 300.0f)); //콜리전 감지 범위 설정.
 	PlayerCollisionBox->SetCollisionProfileName(TEXT("OverlapOnlyPawn")); //콜리전 프리셋 설정.
-
 }
 
 
@@ -36,6 +35,15 @@ void AMyBossEntrance::PostInitializeComponents()
 void AMyBossEntrance::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//시네마틱 스킵관련 바인딩.
+	AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (MyPlayerController)
+	{
+		MyPlayerController->OnExitKeyPressed().AddLambda([this]()->void {
+			SequencePlayer->GoToEndAndStop();
+			});
+	}
 
 	//월드에 배치된 AMyBoss 타입의 액터 가져와 싸울 보스에 저장.
 	for (AMyBoss* BossActor : TActorRange<AMyBoss>(GetWorld()))
@@ -67,8 +75,11 @@ void AMyBossEntrance::BeginPlay()
 	if (SequencePlayer)
 	{
 		//레벨 시퀀스가 끝났을 때의 델리게이트에 함수 바인딩.
-		SequencePlayer->OnFinished.AddDynamic(this, &AMyBossEntrance::OnStartCinematicFinished);
+		//SequencePlayer->OnFinished.AddDynamic(this, &AMyBossEntrance::OnStartCinematicFinished);
+		SequencePlayer->OnStop.AddDynamic(this, &AMyBossEntrance::OnStartCinematicFinished);
 	}  
+
+	//PlayerCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision); //임시로 콜리전 무효화. (테스트용)
 
 }
 
@@ -78,7 +89,7 @@ void AMyBossEntrance::OnStartCinematicFinished()
 	AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(GetWorld()->GetFirstPlayerController());
 	if (MyPlayerController)
 	{
-		MyPlayerController->OnBossRoomEnter().Broadcast(BossToFight);
+		MyPlayerController->OnBossFightStart().Broadcast(BossToFight);
 	}
 }
 
@@ -96,6 +107,7 @@ void AMyBossEntrance::OnPlayerCollisionBeginOverlap(UPrimitiveComponent* Overlap
 		{
 			SequencePlayer->Play();
 		}
+		
 	}
 
 	PlayerCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 한번 들어간 콜리전은 비활성화.

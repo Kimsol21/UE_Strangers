@@ -21,10 +21,11 @@ class UDialogueWidget;
  * 
  */
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnBossRoomEnterDelegate, AMyBoss*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBossFightStartDelegate, AMyBoss*);
 DECLARE_MULTICAST_DELEGATE(FOnLevelSequenceStartDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnNoticeUpdateDelegate, const FString&);
 DECLARE_EVENT(AMyPlayerController, FOnNextSentenceInputPressedEvent);
+DECLARE_EVENT(AMyPlayerController, FOnExitKeyPressedEvent);
 
 UCLASS()
 class STRANGERS_API AMyPlayerController : public APlayerController
@@ -53,19 +54,22 @@ public:
 	AItem_Interactable* CurrentInteractable;
 
 	//이벤트 Get함수.
-	FOnBossRoomEnterDelegate& OnBossRoomEnter() { return OnBossRoomEnterDelegate; };
+	FOnBossFightStartDelegate& OnBossFightStart() { return OnBossFightStartDelegate; };
 	FOnNextSentenceInputPressedEvent& OnNextSentenceInputPressed() { return OnNextSentenceInputPressedEvent; };
 	FOnNoticeUpdateDelegate& OnNoticeUpdate() { return OnNoticeUpdateDelegate; };
 	FOnLevelSequenceStartDelegate& OnLevelSequenceStart() { return OnLevelSequenceStartDelegate; };
-
+	FOnExitKeyPressedEvent& OnExitKeyPressed() { return OnExitKeyPressedEvent; };
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	/*virtual void OnPossess(APawn* InPawn) override;*/
 	
 private:
+	bool IsCinematicPlaying;
+
+	FOnExitKeyPressedEvent OnExitKeyPressedEvent;
 	FOnNextSentenceInputPressedEvent OnNextSentenceInputPressedEvent; //대화 중 다음 대화출력 인풋이 들어왔을 때 이벤트.
-	FOnBossRoomEnterDelegate OnBossRoomEnterDelegate; // 플레이어가 콜리전안에 들어왔을 때 이벤트.
+	FOnBossFightStartDelegate OnBossFightStartDelegate; // 플레이어가 콜리전안에 들어왔을 때 이벤트.
 	FOnNoticeUpdateDelegate OnNoticeUpdateDelegate; // 알림 UI가 업데이트될 때 델리게이트.
 	FOnLevelSequenceStartDelegate OnLevelSequenceStartDelegate; // 시네마틱 시작 직전 델리게이트.
 

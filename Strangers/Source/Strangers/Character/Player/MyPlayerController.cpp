@@ -69,6 +69,7 @@ AMyPlayerController::AMyPlayerController()
 		NoticeWidgetClass = UI_NOTICE.Class;
 	}
 
+	IsCinematicPlaying = false;
 }
 
 void AMyPlayerController::BeginPlay()
@@ -139,14 +140,17 @@ void AMyPlayerController::BeginPlay()
 	OnLevelSequenceStartDelegate.AddLambda([this]()->void {
 		//UI 숨기기.
 		SetPlayerHUDVisibility(false);
+
+		IsCinematicPlaying = true;
 		});
 
 	//시네마틱이 끝나고 보스전 시작 했을 때 델리게이트.
-	OnBossRoomEnterDelegate.AddLambda([this](AMyBoss* _Boss)->void {
+	OnBossFightStartDelegate.AddLambda([this](AMyBoss* _Boss)->void {
 		SetPlayerHUDVisibility(true);
 		_Boss->SetIsFighting(true); // 해당 보스의 전투를 On해준다. 
 		BossHPWidget->BindWidgetToBoss(_Boss); // 보스를 HPUI와 연결.
 		BossHPWidget->SetVisibility(ESlateVisibility::Visible); // HPUI 보이게 하기.
+		IsCinematicPlaying = false;
 		});
 
 	//알림창이 업데이트될 때 델리게이트.
@@ -180,7 +184,7 @@ void AMyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("ZoomOut"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallZoomOut);
 	InputComponent->BindAction(TEXT("Interact"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInteract);
 	InputComponent->BindAction(TEXT("Inventory"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallInventory);
-	InputComponent->BindAction(TEXT("Quit"), EInputEvent::IE_Pressed, this, &AMyPlayerController::PressX);
+	InputComponent->BindAction(TEXT("Exit"), EInputEvent::IE_Pressed, this, &AMyPlayerController::PressX);
 	InputComponent->BindAction(TEXT("Roll"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallRoll);
 	InputComponent->BindAction(TEXT("DrinkPotion"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallDrinkPotion);
 	InputComponent->BindAction(TEXT("LockOn"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallLockOn);
@@ -234,6 +238,11 @@ void AMyPlayerController::CallInventory()
 void AMyPlayerController::PressX()
 {
 	RemoveCurrentPopup();
+
+	if (IsCinematicPlaying)
+	{
+		OnExitKeyPressedEvent.Broadcast();
+	}
 }
 
 void AMyPlayerController::CallInteract()

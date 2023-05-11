@@ -28,6 +28,7 @@ public:
 	void SetNewMonster(int32 ID); //몬스터ID는 이 함수를 통해서만 값변경을 할 수 있게 한다.
 
 	void SetHP(float NewHP); //HP설정
+	void SetHPFull();
 	void SetDamage(float NewDamage); //MyMonster의 TakeDamage함수에서 호출.
 
 	float GetAttackPower(); //공격력 내보내기

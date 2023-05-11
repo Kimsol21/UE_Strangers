@@ -9,8 +9,8 @@
 
 DECLARE_MULTICAST_DELEGATE(FOnMonsterMeetPlayerDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnMonsterFartherAwayPlayerDelegate);
-DECLARE_MULTICAST_DELEGATE(FOnPlayerFocusOnThisDelegate);
-DECLARE_MULTICAST_DELEGATE(FOnLockOnRemoveThisDelegate);
+//DECLARE_MULTICAST_DELEGATE(FOnPlayerFocusOnThisDelegate);
+//DECLARE_MULTICAST_DELEGATE(FOnLockOnRemoveThisDelegate);
 
 
 /**
@@ -28,8 +28,8 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = UI)
 		class UWidgetComponent* HPBarWidget;
 
-	UPROPERTY(VisibleAnywhere, Category = UI)
-		class UWidgetComponent* LockOnWidget;
+	/*UPROPERTY(VisibleAnywhere, Category = UI)
+		class UWidgetComponent* LockOnWidget;*/
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
 		class UMyMonsterStatComponent* MyStat;
@@ -48,8 +48,10 @@ public:
 
 	FOnMonsterMeetPlayerDelegate& OnMonsterMeetPlayer() { return OnMonsterMeetPlayerDelegate; };
 	FOnMonsterFartherAwayPlayerDelegate& OnMonsterFartherAwayPlayer() { return OnMonsterFartherAwayPlayerDelegate; };
-	FOnPlayerFocusOnThisDelegate& OnPlayerFocusOnThis() { return OnPlayerFocusOnThisDelegate; };
-	FOnLockOnRemoveThisDelegate& OnLockOnRemoveThis() { return OnLockOnRemoveThisDelegate; };
+	/*FOnPlayerFocusOnThisDelegate& OnPlayerFocusOnThis() { return OnPlayerFocusOnThisDelegate; };
+	FOnLockOnRemoveThisDelegate& OnLockOnRemoveThis() { return OnLockOnRemoveThisDelegate; };*/
+
+	class ULockOnComponent& GetLockOnComponent() const{ return *LockOnComponent; };
 
 protected:
 	// Called when the game starts or when spawned
@@ -63,15 +65,26 @@ protected:
 	
 
 private:
+	void OnMonsterRespawn(); // 몬스터가 스폰될때 호출되는 함수.
+	void OnMonsterDead(); // 몬스터가 사망했을 시 호출되는 함수.
+
 	FOnMonsterMeetPlayerDelegate OnMonsterMeetPlayerDelegate;
 	FOnMonsterFartherAwayPlayerDelegate OnMonsterFartherAwayPlayerDelegate;
-	FOnPlayerFocusOnThisDelegate OnPlayerFocusOnThisDelegate;
-	FOnLockOnRemoveThisDelegate OnLockOnRemoveThisDelegate;
+	/*FOnPlayerFocusOnThisDelegate OnPlayerFocusOnThisDelegate;
+	FOnLockOnRemoveThisDelegate OnLockOnRemoveThisDelegate;*/
+
+	float RespawnTime;
 
 	UPROPERTY()
 	class UMonster_AnimInstance* MonsterAnim; //캐릭터클래스에서 애님 인스턴스는 자주 사용하므로 멤버변수로 선언한다.
 
 	UPROPERTY()
 	class AMyPlayer* CurrentAttacker; //가장 최근에 Monster에게 피해를 입힌 Actor를 저장하는 변수.
+
+	UPROPERTY()
+		class AMyAIController* MyAIController;
+
+	UPROPERTY(VisibleAnywhere, Category = LockOn)
+	class ULockOnComponent* LockOnComponent;
 
 };

@@ -47,6 +47,8 @@ protected:
 
 
 public:
+	void RemoveLockOn();
+
 	AMyPlayerController* GetPlayerController() const{ return MyPlayerController; };
 	AMyPlayerController* MyPlayerController;
 

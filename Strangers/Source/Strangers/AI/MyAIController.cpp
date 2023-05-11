@@ -27,6 +27,16 @@ AMyAIController::AMyAIController()
 	{
 		BTAsset = BTObject.Object;
 	}
+
+	//인공지능 시작하기.
+	OnAIStartDelegate.AddLambda([this]()->void {
+		GetBrainComponent()->ResumeLogic("Monster is Respawned");
+		});
+
+	//인공지능 멈추기.
+	OnAIStopDelegate.AddLambda([this]()->void {
+		GetBrainComponent()->PauseLogic("Monster is Dead");
+		});
 }
 
 void AMyAIController::OnPossess(APawn* InPawn)

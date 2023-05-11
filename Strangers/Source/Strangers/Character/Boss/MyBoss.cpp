@@ -8,6 +8,8 @@
 #include "DrawDebugHelpers.h" 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Character/Player/MyPlayerController.h"
+#include "Components/LockOnComponent.h"
 
 const float AMyBoss::MaxHP(100.0f);
 
@@ -50,20 +52,7 @@ AMyBoss::AMyBoss()
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("MyMonster")); // 내가 만든 콜리전 프리셋 사용.
 
 
-	//락온 Circle UI
-	LockOnWidget = CreateDefaultSubobject <UWidgetComponent>(TEXT("LockOnWidget")); //락온 위젯 생성.
-	LockOnWidget->SetupAttachment(GetMesh());
-	LockOnWidget->SetWidgetSpace(EWidgetSpace::Screen);
-
-	static ConstructorHelpers::FClassFinder<UUserWidget> UI_LOCKON(TEXT("WidgetBlueprint'/Game/UI/Monster/WG_LockOn.WG_LockOn_C'"));
-	if (UI_LOCKON.Succeeded())
-	{
-		LockOnWidget->SetWidgetClass(UI_LOCKON.Class);
-		LockOnWidget->SetDrawSize(FVector2D(35.0f, 35.0f));
-
-	}
-	LockOnWidget->SetVisibility(false);
-	LockOnWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 110.0f));
+	LockOnComponent = CreateDefaultSubobject<ULockOnComponent>(TEXT("LOCKON")); //락온 컴포넌트 생성.
 }
 
 void AMyBoss::PostInitializeComponents()
@@ -80,7 +69,6 @@ void AMyBoss::PostInitializeComponents()
 
 	BossAnim->OnBossAttackEnd.AddLambda([this]()->void {
 		bIsAttackEnded = true;
-		//UE_LOG(LogTemp, Error, TEXT("OnBossAttackEndDelegate@@@@@@@@@@@@@@@"));
 	});
 
 	BossAnim->OnChangeFlyingMode.AddLambda([this]()->void {
@@ -97,6 +85,16 @@ void AMyBoss::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (MyPlayerController)
+	{
+		MyPlayerController->OnLevelSequenceStart().AddLambda([this]()->void {
+			SetActorHiddenInGame(true);
+			});
+		MyPlayerController->OnBossFightStart().AddLambda([this](AMyBoss* _MyBoss)->void {
+			SetActorHiddenInGame(false);
+			});
+	}
 	//BossWidget->BindWidgetToBoss(this);
 }
 
@@ -111,15 +109,20 @@ float AMyBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 {
 	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
-	//CurrentHP
+	CurrentHP = FMath::Clamp(CurrentHP - FinalDamage, 0.0f, MaxHP); //최근 HP에서 데미지 받은 만큼 빼기.
 
-	if (2 * (CurrentHP - FinalDamage) < MaxHP && 1==Phase)//체력이 50퍼센트 이하로 떨어지면,
+	if (0 == CurrentHP) //체력이 0으로 떨어지면 이벤트 발생시키기.
+	{
+		OnBossHPIsZeroEvent.Broadcast();
+	}
+	else if (2 * CurrentHP < MaxHP && 1==Phase)//체력이 50퍼센트 이하로 떨어지면,
 	{
 		Phase = 2;//2페이즈로 진입.
 		OnPhaseChanged.Broadcast();
 	}
 
-	SetHP(FMath::Clamp(CurrentHP - FinalDamage, 0.0f, MaxHP));
+
+	SetHP(CurrentHP);
 	return 0.0f;
 }
 
@@ -128,10 +131,6 @@ void AMyBoss::SetHP(const float& _NewHP)
 	CurrentHP = _NewHP; 
 	BossHPChangedEvent.Broadcast(CurrentHP / MaxHP); // 이벤트로 현재 HP 비율 전달. 
 
-	if (0 == CurrentHP)
-	{
-		OnBossHPIsZero.Broadcast();
-	}
 }
 
 void AMyBoss::ExecuteNormalAttack1()
