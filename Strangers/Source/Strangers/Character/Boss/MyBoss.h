@@ -28,6 +28,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override; //Actor 컴포넌트가 완전히 초기화된 이후 호출된다.게임 플레이 중에만 호출
 
+
 public:	
 	FBossHPChangedEvent& OnBossHPChanged() { return BossHPChangedEvent; }
 
@@ -41,7 +42,7 @@ public:
 	uint8 GetPhase() const { return Phase; };
 	bool GetIsAttackEnded() const { return bIsAttackEnded; };
 	//bool GetIsFighting() const { return bIsFighting; };
-	void SetIsFighting(bool _bIsFighting) { bIsFighting = _bIsFighting; };
+	//id SetIsFighting(bool _bIsFighting) { bIsFighting = _bIsFighting; };
 
 	void ExecuteNormalAttack1();
 	void ExecuteNormalAttack2();
@@ -65,14 +66,22 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = LockOn)
 	class ULockOnComponent* LockOnComponent;
 
-	bool bIsFighting; // 보스전이 시작되었는지.
+	//bool bIsFighting; // 보스전이 시작되었는지.
 
 	FBossHPChangedEvent BossHPChangedEvent;
 
 	void AttackCheck(); //OnAttackCheck 델리게이트에서 호출할 함수.
+
+	void JumpToTarget(float _JumpPower);
 	
 	UPROPERTY()
 	UMyBossAnimInstance* BossAnim; //캐릭터클래스에서 애님 인스턴스는 자주 사용하므로 멤버변수로 선언한다.
+
+	UPROPERTY(VisibleAnywhere, Category = Effect)
+		UParticleSystemComponent* DeadEffect;
+
+	UFUNCTION()
+		void OnEffectFinished(class UParticleSystemComponent* PSystem);
 
 	static const float MaxHP;
 	float CurrentHP;
@@ -80,14 +89,18 @@ private:
 	float AttackRange;//공격 감지 구가 지나갈 길이 (공격길이)
 	float AttackRadius;//공격 감지 구의 반지름(공격 범위)
 	
-	bool bIsAttackEnded = true;
+	bool bIsAttackEnded;
+
 	
 	uint8 Phase = 1;
 
 	void SetHP(const float& _NewHP);
 
+	void Move_Custom(FVector _MoveDirection, float _MoveSpeed);
 
 	//UPROPERTY()
 	//class AMyPlayer* CurrentAttacker; //가장 최근에 Monster에게 피해를 입힌 Actor를 저장하는 변수.
+
+	class AMyBossAIController* BossAIController;
 
 };

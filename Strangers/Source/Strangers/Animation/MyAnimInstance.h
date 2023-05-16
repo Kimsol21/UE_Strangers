@@ -27,7 +27,7 @@ class STRANGERS_API UMyAnimInstance : public UAnimInstance
 public:
 	UMyAnimInstance();
 
-	virtual void NativeInitializeAnimation();
+	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override; //∆Ω∏∂¥Ÿ »£√‚
 
 	void PlayAttackMontage();

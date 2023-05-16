@@ -14,6 +14,8 @@
 #include "UI/DialogueWidget.h"
 #include "UI/MyNoticeWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/TriggerBox.h"
+#include "EngineUtils.h"
 
 FInputModeGameAndUI InputGameAndUI; //둘다에 입력값 전달.
 FInputModeUIOnly InputUIOnly; //UI에만 입력값 전달.
@@ -69,6 +71,18 @@ AMyPlayerController::AMyPlayerController()
 		NoticeWidgetClass = UI_NOTICE.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UUserWidget> UI_DIED(TEXT("WidgetBlueprint'/Game/UI/Notice/YouDiePopup.YouDiePopup_C'"));
+	if (UI_DIED.Succeeded())
+	{
+		YouDiedWidgetClass = UI_DIED.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> UI_BOSSFELLED(TEXT("WidgetBlueprint'/Game/UI/Notice/EnemyFelledPopup.EnemyFelledPopup_C'"));
+	if (UI_BOSSFELLED.Succeeded())
+	{
+		BossFelledWidgetClass = UI_BOSSFELLED.Class;
+	}
+
 	IsCinematicPlaying = false;
 }
 
@@ -79,6 +93,7 @@ void AMyPlayerController::BeginPlay()
 	
 	SetInputMode(InputGameOnly);
 
+	//컨트롤러가 빙의한 폰 가져와 저장.
 	possessedPawn = Cast<AMyPlayer>(GetPawn());
 	if (nullptr == possessedPawn) return;
 
@@ -121,7 +136,26 @@ void AMyPlayerController::BeginPlay()
 	NoticeWidget->AddToViewport();
 	NoticeWidget->SetVisibility(ESlateVisibility::Collapsed);
 	NoticeWidget->BindUIToMyController(*this);
+
+	//YouDied 위젯
+	YouDiedWidget = CreateWidget<UUserWidget>(this, YouDiedWidgetClass);
+	YouDiedWidget->AddToViewport();
+	YouDiedWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	//enemyFelled 위젯
+	BossFelledWidget = CreateWidget<UUserWidget>(this, BossFelledWidgetClass);
 	
+	//BossFelledWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	//월드에 배치된 Trigger 타입의 액터 가져와 게임 엔딩 트리거에 저장.
+	for (ATriggerBox* TriggerBox : TActorRange<ATriggerBox>(GetWorld()))
+	{
+		if (TriggerBox)
+		{
+			EndingTrigger = TriggerBox;
+			EndingTrigger->SetActorEnableCollision(false);
+		}
+	}
 	
 	//플레이어가 NPC와 만났을 때 델리게이트.
 	possessedPawn->OnPlayerMeetNPC().AddLambda([this](AMyNPC* _NPC)->void {
@@ -146,11 +180,19 @@ void AMyPlayerController::BeginPlay()
 
 	//시네마틱이 끝나고 보스전 시작 했을 때 델리게이트.
 	OnBossFightStartDelegate.AddLambda([this](AMyBoss* _Boss)->void {
-		SetPlayerHUDVisibility(true);
-		_Boss->SetIsFighting(true); // 해당 보스의 전투를 On해준다. 
+		SetPlayerHUDVisibility(true); // HUD 안보이게 하기.
 		BossHPWidget->BindWidgetToBoss(_Boss); // 보스를 HPUI와 연결.
 		BossHPWidget->SetVisibility(ESlateVisibility::Visible); // HPUI 보이게 하기.
-		IsCinematicPlaying = false;
+
+		IsCinematicPlaying = false; 
+		});
+
+	//플레이어가 보스를 퇴치했을때 델리게이트.
+	OnBossFightEndDelegate.AddLambda([this]()->void {
+		BossHPWidget->SetVisibility(ESlateVisibility::Collapsed); // 보스 HP UI 안보이게 하기.  숨겼다가 금방 다시 쓸것만 Visibility 설정하고 나머진 내리는게 나을듯?
+		//BossFelledWidget->SetVisibility(ESlateVisibility::Visible); // 보스 격파 UI Visible.
+		BossFelledWidget->AddToViewport();
+		EndingTrigger->SetActorEnableCollision(true);
 		});
 
 	//알림창이 업데이트될 때 델리게이트.
@@ -160,13 +202,6 @@ void AMyPlayerController::BeginPlay()
 	
 }
 
-////Pawn에 빙의되었을때 호출되는 함수. 
-//void AMyPlayerController::OnPossess(APawn* InPawn)
-//{
-//	possessedPawn = Cast<AMyPlayer>(InPawn); //빙의된 폰 가져오기.
-//	if (nullptr == possessedPawn) return;
-//
-//}
 
 // Called to bind functionality to input
 void AMyPlayerController::SetupInputComponent()
@@ -190,6 +225,7 @@ void AMyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("LockOn"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallLockOn);
 
 }
+
 
 void AMyPlayerController::NextSentence()
 {

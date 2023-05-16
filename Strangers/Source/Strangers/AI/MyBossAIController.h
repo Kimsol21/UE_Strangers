@@ -9,6 +9,9 @@
 class UBehaviorTree;
 class UBlackboardData;
 
+DECLARE_MULTICAST_DELEGATE(FOnAIStopDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnAIStartDelegate);
+
 /**
  * 
  */
@@ -39,6 +42,17 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void BeginPlay() override;
+
+
+public:
+	FOnAIStopDelegate& OnAIStop() { return OnAIStopDelegate; };
+	FOnAIStartDelegate& OnAIStart() { return OnAIStartDelegate; };
+private:
+	FOnAIStopDelegate OnAIStopDelegate;
+	FOnAIStartDelegate OnAIStartDelegate;
+
+
+
 private:
 	UPROPERTY()
 	UBehaviorTree* BTAsset;

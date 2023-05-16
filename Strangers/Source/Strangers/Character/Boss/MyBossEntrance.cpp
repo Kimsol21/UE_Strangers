@@ -22,6 +22,7 @@ AMyBossEntrance::AMyBossEntrance()
 	PlayerCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TargetCollisionBox")); //콜리전 생성.
 	PlayerCollisionBox->SetBoxExtent(FVector(400.0f, 400.0f, 300.0f)); //콜리전 감지 범위 설정.
 	PlayerCollisionBox->SetCollisionProfileName(TEXT("OverlapOnlyPawn")); //콜리전 프리셋 설정.
+	//PlayerCollisionBox->SetCollisionProfileName(TEXT("NoCollision")); //콜리전 프리셋 설정.
 }
 
 

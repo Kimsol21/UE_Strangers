@@ -28,6 +28,7 @@ AMyAIController::AMyAIController()
 		BTAsset = BTObject.Object;
 	}
 
+
 	//인공지능 시작하기.
 	OnAIStartDelegate.AddLambda([this]()->void {
 		GetBrainComponent()->ResumeLogic("Monster is Respawned");
@@ -50,6 +51,8 @@ void AMyAIController::OnPossess(APawn* InPawn)
 		{
 			UE_LOG(LogTemp,Error, TEXT("AIController couldn't run behavior tree!!"));
 		}
+		//MoveToActor(InPawn);
+		
 	}
 
 }

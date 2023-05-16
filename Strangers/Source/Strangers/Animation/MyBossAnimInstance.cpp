@@ -2,10 +2,14 @@
 
 
 #include "Animation/MyBossAnimInstance.h"
+#include "Character/Boss/MyBoss.h"
 
 
 UMyBossAnimInstance::UMyBossAnimInstance()
 {
+	CurrentPawnSpeed = 0.0f;
+
+
 	OnMontageEnded.AddDynamic(this, &UMyBossAnimInstance::OnMyMontageEnded);
 
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_NORMAL_ATTACK1(TEXT("AnimMontage'/Game/Animations/Boss/BossNormalAttack1_Montage.BossNormalAttack1_Montage'"));
@@ -20,12 +24,55 @@ UMyBossAnimInstance::UMyBossAnimInstance()
 		NormalAttack2_Montage = MONTAGE_NORMAL_ATTACK2.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_NORMAL_ATTACK3(TEXT("AnimMontage'/Game/Animations/Boss/BossJumpAttack1_Montage.BossJumpAttack1_Montage'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_NORMAL_ATTACK3(TEXT("AnimMontage'/Game/Animations/Boss/Boss_JumpAttack_Montage.Boss_JumpAttack_Montage'"));
 	if (MONTAGE_NORMAL_ATTACK3.Succeeded())
 	{
 		NormalAttack3_Montage = MONTAGE_NORMAL_ATTACK3.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_DEAD(TEXT("AnimMontage'/Game/Animations/Boss/BossDead_Montage.BossDead_Montage'"));
+	if (MONTAGE_DEAD.Succeeded())
+	{
+		Dead_Montage = MONTAGE_DEAD.Object;
+	}
+
+	IsDead = false;
 }
+
+
+void UMyBossAnimInstance::NativeInitializeAnimation()
+{
+	Super::NativeInitializeAnimation();
+
+	auto Pawn = TryGetPawnOwner();
+	if (!::IsValid(Pawn)) return;
+
+	MyBoss = Cast<AMyBoss>(Pawn);
+	if (!MyBoss) return;
+
+	if (MyBoss)
+	{
+		MyBoss->OnBossHPIsZero().AddLambda([this]()->void {
+			//Montage_Play(Dead_Montage, 1.0f);
+			IsDead = true;
+			});
+	}
+
+}
+
+
+void UMyBossAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
+{
+	Super::NativeUpdateAnimation(DeltaSeconds);
+
+	if (!IsDead)
+	{
+		if (!::IsValid(MyBoss)) return;
+		CurrentPawnSpeed = MyBoss->GetVelocity().Size(); //캐릭터 속도 판별.
+
+	}
+}
+
 
 void UMyBossAnimInstance::MontagePlayNormalAttack1()
 {
@@ -44,7 +91,20 @@ void UMyBossAnimInstance::MontagePlayNormalAttack3()
 
 void UMyBossAnimInstance::OnMyMontageEnded(UAnimMontage* Montage, bool bInterrupted)//AnimInstance의 OnMontageEnded 델리게이트 바인딩 함수.
 {
-	OnBossAttackEnd.Broadcast();
+	//if (Montage == Dead_Montage)//보스 죽음 몽타주 재생이 끝나면
+	//{
+	//	if (auto ComponentOwner = TryGetPawnOwner())
+	//	{
+	//		ComponentOwner->Destroy();
+	//		UE_LOG(LogTemp, Warning, TEXT("BossDeadMontage Ended!!!!!!!!!!!!"));
+	//	}
+	//}
+	OnBossAttackEndDelegate.Broadcast();
+	/*else
+	{
+		OnBossAttackEnd.Broadcast();
+	}*/
+	
 }
 
 void UMyBossAnimInstance::AnimNotify_Notify_SetFlyingMode()
@@ -55,4 +115,9 @@ void UMyBossAnimInstance::AnimNotify_Notify_SetFlyingMode()
 void UMyBossAnimInstance::AnimNotify_Notify_SetWalkingMode()
 {
 	OnChangeWalkingMode.Broadcast();
+}
+
+void UMyBossAnimInstance::AnimNotify_Notify_ExcuteJump()
+{
+	OnExcuteBossJumpEvent.Broadcast();
 }

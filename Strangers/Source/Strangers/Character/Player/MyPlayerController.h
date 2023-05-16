@@ -22,6 +22,7 @@ class UDialogueWidget;
  */
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnBossFightStartDelegate, AMyBoss*);
+DECLARE_MULTICAST_DELEGATE(FOnBossFightEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnLevelSequenceStartDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnNoticeUpdateDelegate, const FString&);
 DECLARE_EVENT(AMyPlayerController, FOnNextSentenceInputPressedEvent);
@@ -36,6 +37,7 @@ public:
 	AMyPlayerController();
 
 public:
+	UFUNCTION(BlueprintCallable)
 	void SetPlayerHUDVisibility(bool _bVisible);
 
 	AMyPlayer* GetPossessedPawn() const { return possessedPawn; };
@@ -59,14 +61,20 @@ public:
 	FOnNoticeUpdateDelegate& OnNoticeUpdate() { return OnNoticeUpdateDelegate; };
 	FOnLevelSequenceStartDelegate& OnLevelSequenceStart() { return OnLevelSequenceStartDelegate; };
 	FOnExitKeyPressedEvent& OnExitKeyPressed() { return OnExitKeyPressedEvent; };
+	FOnBossFightEndDelegate& OnBossFightEnd() { return OnBossFightEndDelegate; };
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
-	/*virtual void OnPossess(APawn* InPawn) override;*/
+
 	
 private:
+
+	class ATriggerBox* EndingTrigger;
+
+	//시네마틱 스킵 관련 변수.
 	bool IsCinematicPlaying;
 
+	FOnBossFightEndDelegate OnBossFightEndDelegate;
 	FOnExitKeyPressedEvent OnExitKeyPressedEvent;
 	FOnNextSentenceInputPressedEvent OnNextSentenceInputPressedEvent; //대화 중 다음 대화출력 인풋이 들어왔을 때 이벤트.
 	FOnBossFightStartDelegate OnBossFightStartDelegate; // 플레이어가 콜리전안에 들어왔을 때 이벤트.
@@ -106,7 +114,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	TSubclassOf<class UMyNoticeWidget> NoticeWidgetClass;
-	UMyNoticeWidget* NoticeWidget; //대화 위젯.
+	UMyNoticeWidget* NoticeWidget; // 알림창 위젯.
+
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+	TSubclassOf<class UUserWidget> YouDiedWidgetClass;
+	UUserWidget* YouDiedWidget; // YouDied 위젯.
+
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+	TSubclassOf<class UUserWidget> BossFelledWidgetClass;
+	UUserWidget* BossFelledWidget; // 보스 격파 위젯.
 
 	TArray<UUserWidget*> PopupWidgetArray; //Popup 배열.
 

@@ -17,7 +17,7 @@ bool UBTDecorator_IsPlayerDrinkPotion::CalculateRawConditionValue(UBehaviorTreeC
 	AMyPlayer* Target = Cast<AMyPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AMyBossAIController::TargetActorKey));
 	if (nullptr == Target) return false;
 
-	UE_LOG(LogTemp, Error, TEXT("This is a Test : %d"), Target->GetIsDrinkPotion());
+	//UE_LOG(LogTemp, Error, TEXT("This is a Test : %d"), Target->GetIsDrinkPotion());
 
 	return Target->GetIsDrinkPotion();
 }

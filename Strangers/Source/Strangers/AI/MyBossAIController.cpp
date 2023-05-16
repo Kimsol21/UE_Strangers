@@ -29,6 +29,18 @@ AMyBossAIController::AMyBossAIController()
 	{
 		BTAsset = BTObject.Object;
 	}
+
+	//인공지능 시작하기.
+	OnAIStartDelegate.AddLambda([this]()->void {
+		GetBrainComponent()->ResumeLogic("Boss AI Begin");
+		UE_LOG(LogTemp, Warning, TEXT("Boss AI Begin@@@@@@@@@@@@@@@@@"));
+		});
+
+	//인공지능 멈추기.
+	OnAIStopDelegate.AddLambda([this]()->void {
+		GetBrainComponent()->PauseLogic("Boss AI Stop");
+		UE_LOG(LogTemp, Warning, TEXT("Boss AI Stop@@@@@@@@@@@@@@@@@"));
+		});
 }
 
 //Pawn에 빙의되었을때 호출되는 함수. 
