@@ -13,6 +13,7 @@
 class UInventoryComponent;
 class AMyPlayerController;
 class AMyNPC;
+class UMyPlayerSkillComponent;
 
 DECLARE_MULTICAST_DELEGATE(FOnStartDrinkPotionDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnDialogueFinishedDelegate);
@@ -47,6 +48,7 @@ protected:
 
 
 public:
+	bool IsSprinting() { return bIsSprinting; };
 	void RemoveLockOn();
 
 	AMyPlayerController* GetPlayerController() const{ return MyPlayerController; };
@@ -56,7 +58,7 @@ public:
 	bool GetDoingSomething() const { return bDoingSomething; };
 	void SetDoingSomething(bool _bDoingSomething) { bDoingSomething = _bDoingSomething; };
 	bool GetIsDrinkPotion() const { return bIsDrinkPotion; };
-
+	UMyPlayerSkillComponent* GetSkillComponent() const { return SkillComponent; };
 	UFUNCTION(BlueprintCallable)
 	void SetPlayerHidden(bool _bHidden);
 
@@ -94,6 +96,9 @@ public:
 	void Roll();
 	void DrinkPotion();
 	void LockOn();
+	void Skill_1();
+	void Sprint();
+	void SprintEnd();
 
 
 	FOnStartDrinkPotionDelegate OnStartDrinkPotion; // 포션 먹기 시작했음을 알리는 델리게이트.
@@ -112,6 +117,7 @@ public:
 	FOnDialogueFinishedDelegate& OnDialogueFinished() { return OnDialogueFinishedDelegate; };
 
 private:
+	float OriginPlayerSpeed;
 	FOnDialogueFinishedDelegate OnDialogueFinishedDelegate;
 
 	//플레이어가 대화를 시작했는지.
@@ -126,11 +132,18 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Effect)
 	UParticleSystemComponent* LevelupEffect;
 
+	
+
 
 	void CheckForInteractables();
 
 	UPROPERTY(VisibleAnywhere, Category = Inventory)
 	UInventoryComponent* MyInventory;
+
+	UPROPERTY(VisibleAnywhere, Category = Skill)
+	UMyPlayerSkillComponent* SkillComponent;
+
+	
 
 	void AttackStartComboState(); //공격이 시작할 때 관련 속성 지정.
 
@@ -153,9 +166,6 @@ private:
 
 
 	//스테미나 관련 변수
-	float CurrentStamina; //현재 스테미나 값.
-	float MaxStamina; // 스테미나 최대값.
-	bool bCanStaminaRecharge; // 스테미나가 재 충전 될 수 있는지 여부.
 	bool bIsSprinting; // 전력질주 중인지 여부.
 
 

@@ -11,6 +11,8 @@
 #include "Character/Player/MyPlayerController.h"
 #include "Components/LockOnComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Inventory/MyWeapon.h"
+#include "Kismet/GameplayStatics.h"
 
 
 
@@ -22,8 +24,22 @@ AMyBoss::AMyBoss()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+
+	//무기 오브젝트 만들고 애셋 적용하기
+	BossWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WEAPON"));
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SK_WEAPON(TEXT("SkeletalMesh'/Game/Animations/Boss/SK_BossWeapon.SK_BossWeapon'"));
+	if (SK_WEAPON.Succeeded())
+	{
+		BossWeaponMesh->SetSkeletalMesh(SK_WEAPON.Object);
+	}
+	BossWeaponMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	BossWeaponMesh->SetRelativeScale3D(FVector(2.0f, 2.0f, 3.0f));
+	
+
+
+
 	CurrentHP = MaxHP;
-	AttackPower = 100.0f;
 
 	//스켈레탈 메쉬 에셋 불러오기.
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SM_BOSS(TEXT("SkeletalMesh'/Game/Animations/Boss/SM_Boss.SM_Boss'"));
@@ -71,6 +87,23 @@ AMyBoss::AMyBoss()
 	DeadEffect->SetRelativeScale3D(FVector(2.0, 2.0, 2.0));
 	DeadEffect->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 
+	//파티클 에셋 불러온 후 적용
+	JumpAttackEffect = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("JUMP_ATTACK_EFFECT"));//이펙트 파티클 설정.
+	JumpAttackEffect->SetupAttachment(GetMesh());
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> P_JUMP_ATTACK_EFFECT(TEXT("ParticleSystem'/Game/FX/Effect_JumpAttack.Effect_JumpAttack'"));
+	if (P_JUMP_ATTACK_EFFECT.Succeeded())
+	{
+		JumpAttackEffect->SetTemplate(P_JUMP_ATTACK_EFFECT.Object);
+		JumpAttackEffect->bAutoActivate = false;
+	}
+	JumpAttackEffect->SetRelativeScale3D(FVector(0.5, 0.5, 0.5));
+	JumpAttackEffect->SetRelativeLocation(FVector(0.0f, 120.0f, 0.0f));
+	JumpAttackEffect->SetRelativeRotation(FRotator(0.0f, 0.0f, 200.0f));
+
+
+	bIsAttackEnded = true;
+	BossState = EBossState::NORMALL;
 }
 
 void AMyBoss::PostInitializeComponents()
@@ -79,14 +112,12 @@ void AMyBoss::PostInitializeComponents()
 
 	// 보스 AnimInstance 찾아서 멤버변수에 저장.
 	BossAnim = Cast<UMyBossAnimInstance>(GetMesh()->GetAnimInstance());
-	if (nullptr == BossAnim)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Boss AnimInstance is null"));
-		return;
-	}
+	if (nullptr == BossAnim) return;
 
 	BossAnim->OnBossAttackEnd().AddLambda([this]()->void {
-		bIsAttackEnded = true;
+		bIsAttackEnded = true; //보스 공격이 끝났음으로 설정.
+		BossState = EBossState::ATTACKING_END;
+		//UE_LOG(LogTemp, Error, TEXT("MyBoss.cpp -----> BossAnim->OnBossAttackEnd().AddLambda "));
 	});
 
 	BossAnim->OnChangeFlyingMode.AddLambda([this]()->void {
@@ -99,6 +130,16 @@ void AMyBoss::PostInitializeComponents()
 
 	BossAnim->OnExcuteBossJump().AddLambda([this]()->void {
 		JumpToTarget(1500.0f); // 플레이어를 향해 점프.
+		});
+
+
+	BossAnim->OnAttackCheck().AddLambda([this]()->void {
+		AttackCheck();
+		});
+
+	BossAnim->OnEffectActivate().AddLambda([this]()->void {
+		//JumpAttackEffect->Activate(true);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), JumpAttackEffect->Template, GetMesh()->GetComponentTransform().GetLocation(), GetActorRotation()*-1, FVector(3.5f, 3.5f, 0.8f), true, EPSCPoolMethod::None, true);
 		});
 
 	DeadEffect->OnSystemFinished.AddDynamic(this, &AMyBoss::OnEffectFinished);
@@ -137,6 +178,13 @@ void AMyBoss::BeginPlay()
 	SetActorHiddenInGame(true);
 	BossAIController->OnAIStop().Broadcast();
 	
+	
+	//제작한 무기 클래스 캐릭터에 부착.
+	FName WeaponSocket(TEXT("Socket_Weapon"));
+	if (nullptr != BossWeaponMesh)
+	{
+		BossWeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocket);
+	}
 }
 
 // Called every frame
@@ -184,9 +232,11 @@ void AMyBoss::ExecuteNormalAttack1()
 
 	//공격관련데이터 설정.
 	bIsAttackEnded = false;
-	AttackRange = 200.0f; //구가 지나갈 길이.
-	AttackRadius = 50.0f;//구 반지름.
-	AttackPower = 10.0f;//공격 데미지
+
+	AttackPower = 10.0f;//공격 파워
+	AttackRange = 300.0f;//공격 감지 구가 지나갈 길이 (공격길이)
+	AttackRadius = 200.0f;//공격 감지 구의 반지름(공격 범위)
+
 }
 
 void AMyBoss::ExecuteNormalAttack2()
@@ -198,9 +248,10 @@ void AMyBoss::ExecuteNormalAttack2()
 
 	//공격관련데이터 설정.
 	bIsAttackEnded = false;
-	AttackRange = 200.0f; //구가 지나갈 길이.
-	AttackRadius = 50.0f;//구 반지름.
-	AttackPower = 10.0f;//공격 데미지
+
+	AttackPower = 10.0f;//공격 파워
+	AttackRange = 300.0f;//공격 감지 구가 지나갈 길이 (공격길이)
+	AttackRadius = 200.0f;//공격 감지 구의 반지름(공격 범위)
 }
 
 void AMyBoss::ExecuteNormalAttack3()
@@ -211,24 +262,71 @@ void AMyBoss::ExecuteNormalAttack3()
 	}
 
 	//공격관련데이터 설정.
+	bIsAttackEnded = false; // 공격이 끝났는지 변수를 false로 설정.
+
+	AttackPower = 50.0f;//공격 파워
+	AttackRange = 100.0f;//공격 감지 구가 지나갈 길이 (공격길이)
+	AttackRadius = 900.0f;//공격 감지 구의 반지름(공격 범위)
+	
+}
+
+void AMyBoss::ExecuteStab()
+{
+	if (BossAnim)
+	{
+		BossAnim->MontagePlayStab();
+	}
+
+	//공격관련데이터 설정.
 	bIsAttackEnded = false;
-	AttackRange = 200.0f; //구가 지나갈 길이.
-	AttackRadius = 50.0f;//구 반지름.
-	AttackPower = 10.0f;//공격 데미지
+
+	AttackPower = 20.0f;//공격 파워
+	AttackRange = 600.0f;//공격 감지 구가 지나갈 길이 (공격길이)
+	AttackRadius = 100.0f;//공격 감지 구의 반지름(공격 범위)
+}
+
+void AMyBoss::ExecuteKick()
+{
+	if (BossAnim)
+	{
+		BossAnim->MontagePlayKick();
+	}
+
+	//공격관련데이터 설정.
+	bIsAttackEnded = false;
+
+	AttackPower = 10.0f;//공격 파워
+	AttackRange = 200.0f;//공격 감지 구가 지나갈 길이 (공격길이)
+	AttackRadius = 200.0f;//공격 감지 구의 반지름(공격 범위)
+}
+
+void AMyBoss::ExecuteComboAttack()
+{
+	if (BossAnim)
+	{
+		BossAnim->MontagePlayComboAttack();
+	}
+
+	//공격관련데이터 설정.
+	bIsAttackEnded = false;
+
+	AttackPower = 20.0f;//공격 파워
+	AttackRange = 300.0f;//공격 감지 구가 지나갈 길이 (공격길이)
+	AttackRadius = 200.0f;//공격 감지 구의 반지름(공격 범위)
 }
 
 
-void AMyBoss::JumpToTarget(float _JumpPower)
+void AMyBoss::JumpToTarget(float _JumpHeight)
 {
 	auto TargetToJump = Cast<AMyPlayer>(GetWorld()->GetFirstPlayerController()->GetPawn()); //점프할 목표 캐릭터 받아오기.
 	auto JumpDestinationVec = TargetToJump->Camera->GetForwardVector(); //캐릭터의 카메라 위치벡터 받아오기.
 	
 	// 점프 방향 벡터 계산.
-	JumpDestinationVec.X *= -500.0f;
-	JumpDestinationVec.Y *= -500.0f;
-	JumpDestinationVec.Z = _JumpPower;
+	JumpDestinationVec.X *= -1500.0f;
+	JumpDestinationVec.Y *= -1500.0f;
+	JumpDestinationVec.Z = _JumpHeight;
 
-	LaunchCharacter(JumpDestinationVec, true, false); // 점프 실행.
+	LaunchCharacter(JumpDestinationVec, false, false); // 점프 실행.
 }
 
 void AMyBoss::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
@@ -236,6 +334,8 @@ void AMyBoss::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
 	FHitResult HitResult; //충돌경우 관련 정보 담을 구조체.
 	FName temp = NAME_None;
 	FCollisionQueryParams Params(NAME_None, false, this);//탐색 방법에 대한 설정 값을 모아둔 구조체.
+	FVector StartLocation = GetActorLocation() + GetActorUpVector() * -130.0f +GetActorForwardVector()*100.0f; //충돌처리 시작위치.
+	FVector TraceVec = GetActorForwardVector() * AttackRange; // 구를 이동할 최종 위치벡터.
 	/*
 	* 첫번째 인자 (TraceTag) : Trace 디버깅을 위한 추가 정보 또는 필터링을 제공하는 데 사용되는 태그(예: Collision Analyzer)
 	* 두번째 인자 (bTraceComplex) : 복잡한 충돌에 대해 추적해야 하는지 여부.
@@ -244,34 +344,33 @@ void AMyBoss::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
 
 	bool bResult = GetWorld()->SweepSingleByChannel( //트레이스 체널을 사용해 물리적 충돌여부를 가리는 함수.
 		HitResult,
-		GetActorLocation(),//탐색시작위치.
-		GetActorLocation() + GetActorForwardVector() * AttackRange,//탐색 종료 위치.
+		StartLocation,//탐색시작위치.
+		StartLocation + TraceVec,//탐색 종료 위치.
 		FQuat::Identity,//탐색에 사용할 도형의 회전.
 		ECollisionChannel::ECC_GameTraceChannel2,//물리 충돌 감지에 사용할 트레이스 채널 정보.
 		FCollisionShape::MakeSphere(AttackRadius),//탐색에 사용할 기본 도형 정보.(구체,캡슐,박스 등)
 		Params
 	);
 
-#if ENABLE_DRAW_DEBUG
-	FVector TraceVec = GetActorForwardVector() * AttackRange;
-	FVector Center = GetActorLocation() + TraceVec * 0.5f;
-	float HalfHeight = AttackRange * 0.5f + AttackRadius;
-	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();//캡슐의 Z벡터를 캐릭터 시선방향으로 회전.
-	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	float DebugLifeTime = 5.0f;
-
-	DrawDebugCapsule //DrawDebugHelpers에서 제공하는 캡슐그리기 함수.
-	(
-		GetWorld(),//그릴월드
-		Center,//위치
-		HalfHeight,//캡슐길이
-		AttackRadius,//반지름
-		CapsuleRot,//캡슐회전
-		DrawColor, //색깔
-		false,//지속여부
-		DebugLifeTime //지속시간
-	);
-#endif
+//#if ENABLE_DRAW_DEBUG
+//	FVector Center = StartLocation + TraceVec * 0.5f; //캡슐의 중앙에 해당하는 값.
+//	float HalfHeight = AttackRange * 0.5f + AttackRadius; // 캡슐 길이.
+//	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();//캡슐의 Z벡터를 캐릭터 시선방향으로 회전.
+//	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+//	float DebugLifeTime = 5.0f;
+//
+//	DrawDebugCapsule //DrawDebugHelpers에서 제공하는 캡슐그리기 함수.
+//	(
+//		GetWorld(),//그릴월드
+//		Center,//위치
+//		HalfHeight,//캡슐길이
+//		AttackRadius,//반지름
+//		CapsuleRot,//캡슐회전
+//		DrawColor, //색깔
+//		false,//지속여부
+//		DebugLifeTime //지속시간
+//	);
+//#endif
 
 	if (bResult)//충돌이 감지되면
 	{

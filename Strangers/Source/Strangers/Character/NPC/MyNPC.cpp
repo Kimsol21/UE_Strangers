@@ -19,7 +19,8 @@ AMyNPC::AMyNPC()
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SM_DEFAULT(TEXT("SkeletalMesh'/Game/Animations/NPC/JapanGirl/Kachujin_G_Rosales.Kachujin_G_Rosales'"));
 	if (SM_DEFAULT.Succeeded())
 	{
-		GetMesh()->SetSkeletalMesh(SM_DEFAULT.Object);
+		Mesh = SM_DEFAULT.Object;
+		GetMesh()->SetSkeletalMesh(Mesh);
 	}
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -90.0f), FRotator(0.0, -90.0f, 0.0f)); // Rotator ( pitch , yaw,  roll )
@@ -28,6 +29,7 @@ AMyNPC::AMyNPC()
 	static ConstructorHelpers::FClassFinder<UAnimInstance> ABP_NPC(TEXT("AnimBlueprint'/Game/Animations/NPC/JapanGirl/AnimBP_JapanGirl.AnimBP_JapanGirl_C'")); //클래스정보 가져오기.
 	if (ABP_NPC.Succeeded())
 	{
+		//Anim->GetClass() = ABP_NPC;
 		GetMesh()->SetAnimInstanceClass(ABP_NPC.Class);
 	}
 

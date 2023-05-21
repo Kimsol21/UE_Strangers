@@ -72,6 +72,7 @@ private:
 	FOnUpdateDialogueEvent OnUpdateDialogueEvent;
 
 	TArray<FDialogueSystemData*> DialogueSheet; // 전체 데이터 테이블.
+
 	TArray<FDialogueSystemData*> CurrentDialogueSheet; // 만나면 출력할 대화 시트.
 	uint8 CurrentSentenceIndex;
 	

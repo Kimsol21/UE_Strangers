@@ -19,6 +19,7 @@ UMyGameInstance::UMyGameInstance()
 		MyMonsterTable = DT_MYMONSTER.Object;
 	}
 
+
 	FString ItemDataPath = TEXT("DataTable'/Game/GameData/ItemData.ItemData'");
 	static ConstructorHelpers::FObjectFinder<UDataTable> DT_Item(*ItemDataPath);
 	if (DT_Item.Succeeded())

@@ -17,9 +17,11 @@ void UPlayerInfoUserWidget::BindPlayerStat(UMyPlayerStatComponent* NewPlayerStat
 	CurrentPlayerStat->OnHPChanged.AddUObject(this, &UPlayerInfoUserWidget::UpdateHPWidget); //델리게이트에 함수 바인딩.
 	CurrentPlayerStat->OnEXPChanged.AddUObject(this, &UPlayerInfoUserWidget::UpdateEXPWidget); //델리게이트에 함수 바인딩.
 	CurrentPlayerStat->OnLevelUp.AddUObject(this, &UPlayerInfoUserWidget::UpdateLevelWidget);
+	CurrentPlayerStat->OnStaminaChanged().AddUObject(this, &UPlayerInfoUserWidget::UpdateStaminaWidget);
 	UpdateHPWidget();
 	UpdateEXPWidget();
 	UpdateLevelWidget();
+	UpdateStaminaWidget();
 }
 
 void UPlayerInfoUserWidget::NativeConstruct()
@@ -43,12 +45,27 @@ void UPlayerInfoUserWidget::NativeConstruct()
 	}
 
 	//이름을 통해 ProgressBar 위젯 받아오기.
+	StaminaProgressBar = Cast<UProgressBar>(GetWidgetFromName(TEXT("PB_Stamina")));
+	if (nullptr == StaminaProgressBar)
+	{
+		UE_LOG(LogTemp, Error, TEXT("StaminaProgressBar is null."));
+		return;
+	}
+
+	//이름을 통해 ProgressBar 위젯 받아오기.
 	LevelTextBlock = Cast<UTextBlock>(GetWidgetFromName(TEXT("Text_Level")));
 	if (nullptr == LevelTextBlock)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LevelTextBlock is null."));
 		return;
 	}
+}
+
+void UPlayerInfoUserWidget::UpdateStaminaWidget()
+{
+	if (!CurrentPlayerStat.IsValid() || !HPProgressBar) return;
+
+	StaminaProgressBar->SetPercent(CurrentPlayerStat->GetStaminaRatio()); //UI에 스테미너값 반영.
 }
 
 void UPlayerInfoUserWidget::UpdateHPWidget()

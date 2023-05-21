@@ -20,7 +20,7 @@ UDialogueManagerComponent::UDialogueManagerComponent()
 	{
 		DialogueTable = DT_Dialogue.Object;
 	}
-	DialogueTable->GetAllRows("Get All Dialogue Data", DialogueSheet); //데이터 테이블을 구조체 배열로 옮겨오기. 
+	
 	
 	CurrentSentenceIndex = 0;
 }
@@ -33,6 +33,8 @@ void UDialogueManagerComponent::BeginPlay()
 
 	AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(GetWorld()->GetFirstPlayerController());
 	MyPlayerController->OnNextSentenceInputPressed().AddUObject(this, &UDialogueManagerComponent::NextSentence);
+
+	DialogueTable->GetAllRows("Get All Dialogue Data", DialogueSheet); //데이터 테이블을 구조체 배열로 옮겨오기. 
 	// ...
 	
 }

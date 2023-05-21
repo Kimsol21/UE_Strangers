@@ -46,26 +46,26 @@ void AMyCharacter::AttackCheck() //OnAttackCheck 델리게이트에서 호출할 함수.
 		Params
 	);
 
-#if ENABLE_DRAW_DEBUG
-	FVector TraceVec = GetActorForwardVector() * AttackRange;
-	FVector Center = GetActorLocation() + TraceVec * 0.5f;
-	float HalfHeight = AttackRange * 0.5f + AttackRadius;
-	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();//캡슐의 Z벡터를 캐릭터 시선방향으로 회전.
-	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	float DebugLifeTime = 5.0f;
-
-	DrawDebugCapsule //DrawDebugHelpers에서 제공하는 캡슐그리기 함수.
-	(
-		GetWorld(),//그릴월드
-		Center,//위치
-		HalfHeight,//캡슐길이
-		AttackRadius,//반지름
-		CapsuleRot,//캡슐회전
-		DrawColor, //색깔
-		false,//지속여부
-		DebugLifeTime //지속시간
-	);
-#endif
+//#if ENABLE_DRAW_DEBUG
+//	FVector TraceVec = GetActorForwardVector() * AttackRange;
+//	FVector Center = GetActorLocation() + TraceVec * 0.5f;
+//	float HalfHeight = AttackRange * 0.5f + AttackRadius;
+//	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();//캡슐의 Z벡터를 캐릭터 시선방향으로 회전.
+//	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+//	float DebugLifeTime = 5.0f;
+//
+//	DrawDebugCapsule //DrawDebugHelpers에서 제공하는 캡슐그리기 함수.
+//	(
+//		GetWorld(),//그릴월드
+//		Center,//위치
+//		HalfHeight,//캡슐길이
+//		AttackRadius,//반지름
+//		CapsuleRot,//캡슐회전
+//		DrawColor, //색깔
+//		false,//지속여부
+//		DebugLifeTime //지속시간
+//	);
+//#endif
 
 	if (bResult)//충돌이 감지되면
 	{

@@ -9,6 +9,18 @@
 class UWidgetComponent;
 class UMyBossAnimInstance;
 
+
+// 보스 상태에 관한 Enum.
+UENUM(BlueprintType)
+enum class EBossState : uint8
+{
+	NORMALL UMETA(DisplayName = "Normal"),
+	ATTACKING_START UMETA(DisplayName = "AttackingStart"),
+	ATTACKING_END UMETA(DisplayName = "AttackingEnd")
+
+};
+
+
 //DECLARE_EVENT_OneParam(AMyBoss, FBossHPChangedEvent, float);
 
 DECLARE_MULTICAST_DELEGATE(FOnPhaseChangedDelegate);
@@ -37,7 +49,7 @@ public:
 
 	//공격패턴 관련 함수.
 	//void PerformAttackPattern_1(); 
-
+	EBossState BossState;
 public:
 	uint8 GetPhase() const { return Phase; };
 	bool GetIsAttackEnded() const { return bIsAttackEnded; };
@@ -47,6 +59,9 @@ public:
 	void ExecuteNormalAttack1();
 	void ExecuteNormalAttack2();
 	void ExecuteNormalAttack3();
+	void ExecuteStab();
+	void ExecuteKick();
+	void ExecuteComboAttack();
 
 	//이펙트 관련.
 	/*UPROPERTY(VisibleDefaultsOnly, Category = Effect)
@@ -61,6 +76,8 @@ public:
 	FOnBossHPIsZeroEvent& OnBossHPIsZero() { return OnBossHPIsZeroEvent; };
 	class ULockOnComponent& GetLockOnComponent() const { return *LockOnComponent; };
 private:
+	USkeletalMeshComponent* BossWeaponMesh;
+
 	FOnBossHPIsZeroEvent OnBossHPIsZeroEvent;
 
 	UPROPERTY(VisibleAnywhere, Category = LockOn)
@@ -80,6 +97,9 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Effect)
 		UParticleSystemComponent* DeadEffect;
 
+	UPROPERTY(VisibleAnywhere, Category = Effect)
+		UParticleSystemComponent* JumpAttackEffect;
+
 	UFUNCTION()
 		void OnEffectFinished(class UParticleSystemComponent* PSystem);
 
@@ -95,8 +115,6 @@ private:
 	uint8 Phase = 1;
 
 	void SetHP(const float& _NewHP);
-
-	void Move_Custom(FVector _MoveDirection, float _MoveSpeed);
 
 	//UPROPERTY()
 	//class AMyPlayer* CurrentAttacker; //가장 최근에 Monster에게 피해를 입힌 Actor를 저장하는 변수.

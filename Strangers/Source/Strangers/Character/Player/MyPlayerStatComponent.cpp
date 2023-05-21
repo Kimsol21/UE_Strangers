@@ -4,34 +4,65 @@
 #include "MyPlayerStatComponent.h"
 #include "Manager/MyGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Character/Player/MyPlayer.h"
 
 // Sets default values for this component's properties
 UMyPlayerStatComponent::UMyPlayerStatComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 	bWantsInitializeComponent = true;
 
 
 	Level = 1;
+
+	bCanStaminaRecharge = true;
 	// ...
-}
-
-
-// Called when the game starts
-void UMyPlayerStatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
 }
 
 void UMyPlayerStatComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 	SetNewLevel(Level);
+}
+
+void UMyPlayerStatComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+#pragma region LOGIC About Stamina
+	if (OwnerPlayer->IsSprinting()) //전력질주 중이라면
+	{
+		//스테미나 천천히 감소. (보간)
+		SetStamina(FMath::FInterpConstantTo(CurrentStamina, 0.0f, DeltaTime, 15.0f));//FInterpConstantTo : 일정한 step으로 Current에서 Target까지 float 보간.
+		if (CurrentStamina < KINDA_SMALL_NUMBER)
+		{
+			OwnerPlayer->SprintEnd();
+		}
+	}
+	else
+	{
+		if (bCanStaminaRecharge && CurrentStamina < CurrentStatData->MaxStamina) //재충전 가능한 상태이고,스테미나가 최대치가 아니라면,
+		{
+			SetStamina(FMath::FInterpConstantTo(CurrentStamina, CurrentStatData->MaxStamina, DeltaTime, CurrentStatData->MaxStamina*0.25));// 천천히 회복.
+		}
+	}
+#pragma endregion 
+}
+
+// Called when the game starts
+void UMyPlayerStatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	OwnerPlayer = Cast<AMyPlayer>(GetOwner());
+	if (!OwnerPlayer) return;
+
+	OwnerPlayer->OnStartDrinkPotion.AddLambda([this]()->void {
+		SetHP(FMath::Clamp(CurrentHP + (CurrentStatData->MaxHP / 2), 0.0f, CurrentStatData->MaxHP));
+		});
+	// ...
+
+	
 }
 
 void UMyPlayerStatComponent::SetNewLevel(int32 NewLevel)
@@ -45,6 +76,7 @@ void UMyPlayerStatComponent::SetNewLevel(int32 NewLevel)
 	{
 		Level = NewLevel;
 		SetHP(CurrentStatData->MaxHP);
+		SetStamina(CurrentStatData->MaxStamina);
 	}
 }
 
@@ -88,6 +120,30 @@ void UMyPlayerStatComponent::SetDamage(float NewDamage)
 	}	
 }
 
+void UMyPlayerStatComponent::UseStamina(float _NewStamina)
+{
+	if (!CurrentStatData) return;
+
+	SetStamina(CurrentStamina - _NewStamina);
+}
+
+void UMyPlayerStatComponent::SetStamina(float _NewStamina)
+{
+	if (!CurrentStatData) return;
+
+	CurrentStamina = FMath::Clamp(_NewStamina, 0.0f, CurrentStatData->MaxStamina);
+
+	OnStaminaChangedDelegate.Broadcast();
+
+}
+
+float UMyPlayerStatComponent::GetStaminaRatio()
+{
+	if (!CurrentStatData) return 0.0f;
+
+	return (CurrentStamina/CurrentStatData->MaxStamina);
+}
+
 float UMyPlayerStatComponent::GetAttackPower()
 {
 	if (nullptr == CurrentStatData) UE_LOG(LogTemp, Error, TEXT("CurrentStatData is null."));
@@ -114,10 +170,17 @@ float UMyPlayerStatComponent::GetEXPRatio()
 	return (CurrentEXP / CurrentStatData->NextExp);
 }
 
+
+
 int32 UMyPlayerStatComponent::GetLevel()
 {
 	if (nullptr == CurrentStatData) UE_LOG(LogTemp, Error, TEXT("CurrentStatData is null."));
 
 	return CurrentStatData->Level;
+}
+
+bool UMyPlayerStatComponent::IsStaminaZero()
+{
+	return CurrentStamina < 10 ? true : false;
 }
 

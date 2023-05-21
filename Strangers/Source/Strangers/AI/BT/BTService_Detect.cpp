@@ -55,16 +55,16 @@ void UBTService_Detect::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 			if (MyPlayer) // 만약 플레이어가 맞다면,
 			{
 				OwnerComp.GetBlackboardComponent()->SetValueAsObject(AMyAIController::TargetKey, MyPlayer); //해당 플레이어를 블랙보드의 TargetKey값에 저장.
-				//인자 : (구를 그릴 공간, 그릴 위치, 구의 반지름, 조각수, 구의 색깔, 영구적인지 여부, 구의 수명)
-				DrawDebugSphere(World, Center, DetectRadius, 16, FColor::Green, false, 0.2f); // 구모양의 디버그 라인을 그린다. 색은 초록색.
-				//인자 : (선을 그릴 공간, 그리기 시작할 위치, 마지막 위치, 선의 색깔, 영구적인지 여부, 선의 수명)
-				DrawDebugLine(World, ControllingPawn->GetActorLocation(), MyPlayer->GetActorLocation(), FColor::Blue, false, 0.2f); // 적에서 플레이어 사이에 파란색 디버그 라인을 그린다. 
+				////인자 : (구를 그릴 공간, 그릴 위치, 구의 반지름, 조각수, 구의 색깔, 영구적인지 여부, 구의 수명)
+				//DrawDebugSphere(World, Center, DetectRadius, 16, FColor::Green, false, 0.2f); // 구모양의 디버그 라인을 그린다. 색은 초록색.
+				////인자 : (선을 그릴 공간, 그리기 시작할 위치, 마지막 위치, 선의 색깔, 영구적인지 여부, 선의 수명)
+				//DrawDebugLine(World, ControllingPawn->GetActorLocation(), MyPlayer->GetActorLocation(), FColor::Blue, false, 0.2f); // 적에서 플레이어 사이에 파란색 디버그 라인을 그린다. 
 				return;
 			}
 		}
 	}
 
 	//감지된 액터가 없다면, 
-	DrawDebugSphere(World, Center, DetectRadius, 16, FColor::Red, false, 0.2f); //위와 같은 구모양의 디버그라인을 그리지만 색은 빨간색이다.
+	//DrawDebugSphere(World, Center, DetectRadius, 16, FColor::Red, false, 0.2f); //위와 같은 구모양의 디버그라인을 그리지만 색은 빨간색이다.
 	
 }

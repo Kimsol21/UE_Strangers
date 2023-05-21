@@ -26,6 +26,7 @@ protected:
 	void UpdateHPWidget();
 	void UpdateEXPWidget();
 	void UpdateLevelWidget();
+	void UpdateStaminaWidget();
 
 private:
 	TWeakObjectPtr<UMyPlayerStatComponent> CurrentPlayerStat; //약포인터 사용
@@ -35,6 +36,9 @@ private:
 
 	UPROPERTY()
 	UProgressBar* EXPProgressBar;
+
+	UPROPERTY()
+	UProgressBar* StaminaProgressBar;
 
 	UPROPERTY()
 	UTextBlock* LevelTextBlock;

@@ -102,8 +102,27 @@ AMyMonster::AMyMonster()
 	DamagedEffect->SetRelativeScale3D(FVector(0.6, 0.6, 0.6));
 
 
+	//리스폰 이펙트
+
+	RespawnEffect = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("P_RESPAWN"));//이펙트 파티클 설정.
+	RespawnEffect->SetupAttachment(GetMesh());
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> P_RESPAWN(TEXT("ParticleSystem'/Game/FX/P_Heal_Target.P_Heal_Target'"));
+	if (P_RESPAWN.Succeeded())
+	{
+		RespawnEffect->SetTemplate(P_RESPAWN.Object);
+		RespawnEffect->bAutoActivate = false;
+	}
+
+	RespawnEffect->SetRelativeLocation(FVector(0.0f, 0.0f, 40.0f));
+	RespawnEffect->SetRelativeScale3D(FVector(2.0f, 2.0f, 0.6f));
+
+
 	//몬스터 리스폰 타임
 	RespawnTime = 3.0f;
+
+	
+
 }
 
 void AMyMonster::PostInitializeComponents()
@@ -166,6 +185,9 @@ void AMyMonster::BeginPlay()
 
 	//컨트롤러 받아오기.
 	MyAIController = Cast<AMyAIController>(GetController());
+
+	//원래 위치 저장.
+	OriginLocation = GetActorLocation();
 }
 
 float AMyMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -200,7 +222,7 @@ void AMyMonster::OnEffectFinished(UParticleSystemComponent* PSystem)
 {
 	//캐릭터 메쉬 숨기기.
 	GetMesh()->SetVisibility(false);
-
+	MonsterAnim->RestartAnimLogic();
 	//타이머를 이용하여 일정시간이 지난 후 몬스터 리스폰.
 
 	//각각의 타이머를 구분하는 데 사용하는 고유한 핸들.
@@ -212,18 +234,22 @@ void AMyMonster::OnEffectFinished(UParticleSystemComponent* PSystem)
 
 void AMyMonster::OnMonsterRespawn()
 {
-	//메쉬 보이게 하기.
-	GetMesh()->SetVisibility(true);
+	
+	//원래 위치로 돌아가게 하기.
+	SetActorLocation(OriginLocation);
 
 	//AIController 다시 만들기.
 	MyAIController->OnAIStart().Broadcast();
 	
 	//AnimInstance 다시 재생하도록 하기.
-	MonsterAnim->RestartAnimLogic();
+	
 
 	//DeadEffect->Activate(true); // 죽음 이펙트 Activate.
 	SetActorEnableCollision(true); // 콜리전 활성화.	
-	MyStat->SetHPFull(); //레벨업 시 풀피
+	MyStat->SetHPFull(); //피 다시 채워주기.
+	//메쉬 보이게 하기.
+	GetMesh()->SetVisibility(true);
+	RespawnEffect->Activate(true);
 }
 
 void AMyMonster::OnMonsterDead()

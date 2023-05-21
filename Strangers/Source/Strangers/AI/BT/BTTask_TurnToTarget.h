@@ -18,4 +18,17 @@ class STRANGERS_API UBTTask_TurnToTarget : public UBTTaskNode
 public:
 	UBTTask_TurnToTarget();
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Turn")
+		float TurnSpeed;
+
+protected:
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+
+private:
+	UPROPERTY()
+	class APawn* OwnerPawn;
+
+	FRotator TargetRot;
+
 };

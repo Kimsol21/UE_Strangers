@@ -9,7 +9,14 @@
 UBTService_RandomMaker::UBTService_RandomMaker()
 {
 	NodeName = TEXT("RandomMaker"); //노드 이름 설정.
-	Interval = 1.0f; // 실행 빈도 설정.
+	Interval = 0.5f; // 실행 빈도 설정.
+}
+
+void UBTService_RandomMaker::OnSearchStart(FBehaviorTreeSearchData& SearchData)
+{
+	Super::OnSearchStart(SearchData);
+
+	//SearchData.OwnerComp.GetBlackboardComponent()->SetValueAsInt(AMyBossAIController::RandNumKey, 0);
 }
 
 void UBTService_RandomMaker::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -27,7 +34,7 @@ void UBTService_RandomMaker::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* 
 		TempNum = FMath::Clamp(TempNum - Percentages[i], 0, 100);
 		if (TempNum < RandNum)
 		{
-			ResultNum = i + 1;
+			ResultNum = i;
 			break;
 		}
 	}

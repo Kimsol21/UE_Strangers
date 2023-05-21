@@ -15,7 +15,7 @@ struct FMyCharacterData : public FTableRowBase
 	GENERATED_BODY()
 
 public : 
-	FMyCharacterData() : Level(1), MaxHP(100.0f), AttackPower(10.0f), NextExp(50) {}
+	FMyCharacterData() : Level(1), MaxHP(100.0f), AttackPower(10.0f), NextExp(50), MaxStamina(100.0f) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	int32 Level;
@@ -28,6 +28,9 @@ public :
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	int32 NextExp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float MaxStamina;
 };
 
 USTRUCT(BlueprintType) //몬스터 데이터 구조체

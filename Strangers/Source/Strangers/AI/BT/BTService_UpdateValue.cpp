@@ -9,8 +9,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AI/MyBossAIController.h"
 
-const float UBTService_UpdateValue::DetectRadiusClose(600.0f);//물체 감지 먼 반경 10미터로 설정.
-const float UBTService_UpdateValue::DetectRadiusFar(1600.0f);// 물체 감지 가까운 반경 6미터로 설정.
+const float UBTService_UpdateValue::DetectRadiusClose(700.0f);// 물체 감지 가까운 반경 6미터로 설정.
+const float UBTService_UpdateValue::DetectRadiusFar(1600.0f);//물체 감지 먼 반경 10미터로 설정.
 
 UBTService_UpdateValue::UBTService_UpdateValue()
 {

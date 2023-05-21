@@ -30,10 +30,28 @@ UMyBossAnimInstance::UMyBossAnimInstance()
 		NormalAttack3_Montage = MONTAGE_NORMAL_ATTACK3.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_KICK(TEXT("AnimMontage'/Game/Animations/Boss/Boss_Kick_Montage.Boss_Kick_Montage'"));
+	if (MONTAGE_KICK.Succeeded())
+	{
+		Kick_Montage = MONTAGE_KICK.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_STAB(TEXT("AnimMontage'/Game/Animations/Boss/Boss_Stab_Montage.Boss_Stab_Montage'"));
+	if (MONTAGE_STAB.Succeeded())
+	{
+		Stab_Montage = MONTAGE_STAB.Object;
+	}
+
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_DEAD(TEXT("AnimMontage'/Game/Animations/Boss/BossDead_Montage.BossDead_Montage'"));
 	if (MONTAGE_DEAD.Succeeded())
 	{
 		Dead_Montage = MONTAGE_DEAD.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MONTAGE_COMBO_ATTACK(TEXT("AnimMontage'/Game/Animations/Boss/BossNormalAttack4_Montage.BossNormalAttack4_Montage'"));
+	if (MONTAGE_COMBO_ATTACK.Succeeded())
+	{
+		ComboAttack_Montage = MONTAGE_COMBO_ATTACK.Object;
 	}
 
 	IsDead = false;
@@ -89,6 +107,21 @@ void UMyBossAnimInstance::MontagePlayNormalAttack3()
 	Montage_Play(NormalAttack3_Montage, 1.0f);
 }
 
+void UMyBossAnimInstance::MontagePlayKick()
+{
+	Montage_Play(Kick_Montage, 1.0f);
+}
+
+void UMyBossAnimInstance::MontagePlayStab()
+{
+	Montage_Play(Stab_Montage, 1.0f);
+}
+
+void UMyBossAnimInstance::MontagePlayComboAttack()
+{
+	Montage_Play(ComboAttack_Montage, 1.0f);
+}
+
 void UMyBossAnimInstance::OnMyMontageEnded(UAnimMontage* Montage, bool bInterrupted)//AnimInstance의 OnMontageEnded 델리게이트 바인딩 함수.
 {
 	//if (Montage == Dead_Montage)//보스 죽음 몽타주 재생이 끝나면
@@ -99,6 +132,7 @@ void UMyBossAnimInstance::OnMyMontageEnded(UAnimMontage* Montage, bool bInterrup
 	//		UE_LOG(LogTemp, Warning, TEXT("BossDeadMontage Ended!!!!!!!!!!!!"));
 	//	}
 	//}
+	UE_LOG(LogTemp, Warning, TEXT("OnBossAttackEndDelegate.Broadcast();!!!!!!!!!!!!"));
 	OnBossAttackEndDelegate.Broadcast();
 	/*else
 	{
@@ -120,4 +154,14 @@ void UMyBossAnimInstance::AnimNotify_Notify_SetWalkingMode()
 void UMyBossAnimInstance::AnimNotify_Notify_ExcuteJump()
 {
 	OnExcuteBossJumpEvent.Broadcast();
+}
+
+void UMyBossAnimInstance::AnimNotify_AttackHitCheck() //해당 노티파이가 발생하면, 
+{
+	OnAttackCheckEvent.Broadcast(); //선언한 델리게이트에 바인딩된 함수들 실행(Broadcast).
+}
+
+void UMyBossAnimInstance::AnimNotify_EffectActivate() //해당 노티파이가 발생하면, 
+{
+	OnEffectActivateEvent.Broadcast(); //선언한 델리게이트에 바인딩된 함수들 실행(Broadcast).
 }

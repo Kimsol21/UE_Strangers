@@ -41,6 +41,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Effect)
 		UParticleSystemComponent* DamagedEffect;
 
+	UPROPERTY(VisibleAnywhere, Category = Effect)
+		UParticleSystemComponent* RespawnEffect;
+
 	
 
 	UFUNCTION()
@@ -65,6 +68,8 @@ protected:
 	
 
 private:
+	FVector OriginLocation;
+
 	void OnMonsterRespawn(); // 몬스터가 스폰될때 호출되는 함수.
 	void OnMonsterDead(); // 몬스터가 사망했을 시 호출되는 함수.
 

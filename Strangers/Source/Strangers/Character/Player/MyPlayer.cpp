@@ -14,6 +14,7 @@
 #include "Character/Monster/MyMonster.h"
 #include "Components/LockOnComponent.h"
 #include "Character/Boss/MyBoss.h"
+#include "Character/Player/MyPlayerSkillComponent.h"
 
 #pragma region Init Function
 
@@ -27,6 +28,7 @@ AMyPlayer::AMyPlayer()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CAMERA"));
 	MyStat = CreateDefaultSubobject<UMyPlayerStatComponent>(TEXT("CHARACTERSTAT"));
 	MyInventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("INVENTORY"));
+	SkillComponent = CreateDefaultSubobject<UMyPlayerSkillComponent>(TEXT("SKILL"));
 
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	Camera->SetupAttachment(SpringArm);
@@ -64,7 +66,7 @@ AMyPlayer::AMyPlayer()
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;//컨트롤 회전이 가리키는 방향으로 캐릭터가 부드럽게 회전.
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
 
-	GetCharacterMovement()->JumpZVelocity = 800.0f; //점프 높이 지정
+	GetCharacterMovement()->JumpZVelocity = 1000.0f; //점프 높이 지정
 	AttackMoveImpulse = 1000.0f;//공격전진 세기 초기화.
 	bIsAttacking = false;//공격중이 아님으로 초기화.
 	MaxCombo = 4; //최대 콤보 지정.
@@ -88,13 +90,10 @@ AMyPlayer::AMyPlayer()
 
 
 	//스테미나 관련 변수 초기화.
-	MaxStamina = 100.0f; // 스테미나 최대값.
-	CurrentStamina = MaxStamina; //현재 스테미나 값.
-	bCanStaminaRecharge = true; // 스테미나가 재 충전 될 수 있는지 여부.
 	bIsSprinting = false; // 전력질주 중인지 여부.
 
 
-	//이펙트 재생
+	//레벨업 이펙트
 	LevelupEffect = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("LEVEL_EFFECT"));//이펙트 파티클 설정.
 	LevelupEffect->SetupAttachment(GetMesh());
 
@@ -108,11 +107,15 @@ AMyPlayer::AMyPlayer()
 	//LevelupEffect->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	LevelupEffect->SetRelativeScale3D(FVector(0.6, 0.6, 0.6));
 
+	
+
 }
 
 void AMyPlayer::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	OriginPlayerSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
 	MyAnim = Cast<UMyAnimInstance>(GetMesh()->GetAnimInstance());
 	if (nullptr == MyAnim)
@@ -137,11 +140,12 @@ void AMyPlayer::PostInitializeComponents()
 		bCanMyMove = false;
 		MyMoveSpeed = 2.0f;
 		bDoingSomething = false;
+		MyStat->SetCanStaminaRecharge(true);
 		});
 
 	//포션을 먹기가 끝났을 때 호출되는 함수.
 	MyAnim->OnDrinkPotionEnd.AddLambda([this]()->void {
-		GetCharacterMovement()->MaxWalkSpeed *=5; //원래 이동속도로 복귀.
+		GetCharacterMovement()->MaxWalkSpeed = OriginPlayerSpeed; //원래 이동속도로 복귀.
 		bDoingSomething = false; // 행동중인지 여부를 false로 설정.
 		isDoingMovableAction = false;
 		bIsDrinkPotion = false;
@@ -256,29 +260,6 @@ void AMyPlayer::Tick(float DeltaTime)
 	//물체 상호작용
 	CheckForInteractables();
 
-#pragma region LOGIC About Stamina
-	if (bIsSprinting) //전력질주 중이라면
-	{
-		//스테미나 천천히 감소. (보간)
-		CurrentStamina = FMath::FInterpConstantTo(CurrentStamina, 0.0f, DeltaTime, 0.1f);//FInterpConstantTo : 일정한 step으로 Current에서 Target까지 float 보간.
-		
-		if (CurrentStamina <= 0.0f) //스테미나가 전부 고갈되면,
-		{
-			//전부고갈되었을때의 로직, 함수, 델리게이트 실현.
-		}
-	}
-	else
-	{
-		if (CurrentStamina < MaxStamina) //스테미나가 최대치가 아니라면,
-		{
-			if (bCanStaminaRecharge) // 충전할 수 있는 상황일때 서서히 재충전.
-			{
-				CurrentStamina = FMath::FInterpConstantTo(CurrentStamina, MaxStamina, DeltaTime, bCanStaminaRecharge);
-			}
-		}
-	}
-#pragma endregion 
-
 #pragma region LOGIC About LockON
 	if (bIsLockedOn) // 락온 상태라면, 
 	{
@@ -357,6 +338,35 @@ void AMyPlayer::CheckForInteractables()
 
 #pragma region Input Binding Function
 
+void AMyPlayer::SprintEnd()
+{
+	bIsSprinting = false;
+	GetCharacterMovement()->MaxWalkSpeed = OriginPlayerSpeed; //원래 이동속도로 복귀.
+
+}
+
+void AMyPlayer::Sprint()
+{
+	bIsSprinting = true;
+	GetCharacterMovement()->MaxWalkSpeed = OriginPlayerSpeed * 2;
+}
+
+void AMyPlayer::Skill_1()
+{
+	if (!SkillComponent || !MyAnim) return; // 컴포넌트 NullCheck.
+	if (bDoingSomething || GetCharacterMovement()->IsFalling()) return; // 무언가를 하고있거나 공중에 떠있지 않을 때.
+	if (!SkillComponent->GetSkillCanActivate(1)) return;//스킬 쿨타임도는 중이면 리턴,
+
+	SkillComponent->ExecuteSkill_1(); //스킬1 실행.
+
+	bIsDrinkPotion = true;
+	isDoingMovableAction = true;
+	bDoingSomething = true;
+	GetCharacterMovement()->MaxWalkSpeed = OriginPlayerSpeed*0.2f; //포션먹을때는 움직임 속도 감소.
+	MyAnim->PlayDrinkPotion();
+	OnStartDrinkPotion.Broadcast();
+}
+
 void AMyPlayer::UpDown(float NewAxisValue)
 {
 	if (!bDoingSomething)//뭔가를 하고있지 않을때만 이동할 수 있다.
@@ -404,22 +414,24 @@ void AMyPlayer::ZoomOut()
 
 void AMyPlayer::Roll()
 {
+	if (!MyAnim || !MyStat) return;
 	if (bDoingSomething || GetCharacterMovement()->IsFalling()) return;
+	if (MyStat->IsStaminaZero()) return;
 
-	if (MyAnim)
-	{
-		MyMoveSpeed = 4.0f; // 구르기 속도 조절.
-		bCanMyMove = true; // Tick에서 내 캐릭터가 움직일 수 있도록 설정.
-		bIsInvincible = true; // 무적상태로 전환.
-		bDoingSomething = true;
-		MyAnim->PlayRollMontage();
-		bDoingSomething = true;
-	}	
+	MyMoveSpeed = 4.0f; // 구르기 속도 조절.
+	bCanMyMove = true; // Tick에서 내 캐릭터가 움직일 수 있도록 설정.
+	bIsInvincible = true; // 무적상태로 전환.
+	bDoingSomething = true;
+	MyAnim->PlayRollMontage();
+	MyStat->UseStamina(50.0f); // 스테미나 사용.
+	MyStat->SetCanStaminaRecharge(false); //스테미나 재충전 불가로 설정.
+	
+	
 }
 
 void AMyPlayer::DrinkPotion()
 {
-	if (bDoingSomething || GetCharacterMovement()->IsFalling()) return;
+	if (bDoingSomething || GetCharacterMovement()->IsFalling()) return; // 무언가를 하고있거나 공중에 떠있지 않을 때
 
 	if (MyAnim)
 	{
@@ -429,7 +441,9 @@ void AMyPlayer::DrinkPotion()
 		bDoingSomething = true;
 		GetCharacterMovement()->MaxWalkSpeed *= 0.2f; //포션먹을때는 움직임 속도 감소.
 		MyAnim->PlayDrinkPotion();
+		//HPUpEffect->Activate(true);
 		OnStartDrinkPotion.Broadcast();
+		
 		//포션먹기 애니메이션 재생. 
 		//노티파이 브로드케스트.	
 	}
@@ -536,6 +550,8 @@ void AMyPlayer::SetDamage(float _Damage)
 
 float AMyPlayer::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (bIsInvincible) return 0.0f;//무적상태라면 리턴.
+
 	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	MyStat->SetDamage(FinalDamage); //데미지 설정.

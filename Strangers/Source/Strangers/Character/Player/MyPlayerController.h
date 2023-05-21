@@ -16,6 +16,7 @@ class AItem_Interactable;
 class UBossHPWidget;
 class AMyBoss;
 class UDialogueWidget;
+class UPlayerSkillPanelWidget;
 
 /**
  * 
@@ -68,11 +69,15 @@ protected:
 
 	
 private:
-
+	UPROPERTY()
 	class ATriggerBox* EndingTrigger;
+
+	UPROPERTY()
+	class AMyNPC* EndingNPC;
 
 	//시네마틱 스킵 관련 변수.
 	bool IsCinematicPlaying;
+
 
 	FOnBossFightEndDelegate OnBossFightEndDelegate;
 	FOnExitKeyPressedEvent OnExitKeyPressedEvent;
@@ -89,8 +94,8 @@ private:
 	UPlayerInfoUserWidget* UserInfoWidget; //HUD:플레이어 정보 위젯, 좌측상단.
 
 	UPROPERTY(EditDefaultsOnly,  Category = UI)
-	TSubclassOf<UUserWidget> SkillClass;
-	UUserWidget* SkillWidget; //HUD:스킬 정보 위젯, 우측하단.
+	TSubclassOf<UPlayerSkillPanelWidget> SkillClass;
+	UPlayerSkillPanelWidget* SkillWidget; //HUD:스킬 정보 위젯, 우측하단.
 
 	UPROPERTY(EditDefaultsOnly,  Category = UI)
 	TSubclassOf<UUserWidget> ItemInfoClass;
@@ -146,6 +151,9 @@ private:
 	void CallDrinkPotion();
 	void PressX();
 	void CallLockOn();
+	void CallSkill_1();
+	void CallSprint();
+	void CallSprintEnd();
 
 	//UI 관련 함수들
 	void AddPopup(UUserWidget& widget); //인자로 들어온 위젯을 화면에 띄웁니다.

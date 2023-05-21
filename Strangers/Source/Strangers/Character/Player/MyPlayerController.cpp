@@ -16,6 +16,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TriggerBox.h"
 #include "EngineUtils.h"
+#include "UI/PlayerSkillPanelWidget.h"
+#include "Character/Player/MyPlayerStatComponent.h"
 
 FInputModeGameAndUI InputGameAndUI; //둘다에 입력값 전달.
 FInputModeUIOnly InputUIOnly; //UI에만 입력값 전달.
@@ -29,7 +31,7 @@ AMyPlayerController::AMyPlayerController()
 		UserInfoClass = UI_HUD.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> UI_SKILL(TEXT("WidgetBlueprint'/Game/UI/UI_Skill.UI_Skill_C'"));
+	static ConstructorHelpers::FClassFinder<UPlayerSkillPanelWidget> UI_SKILL(TEXT("WidgetBlueprint'/Game/UI/UI_Skill.UI_Skill_C'"));
 	if (UI_SKILL.Succeeded())
 	{
 		SkillClass = UI_SKILL.Class;
@@ -104,8 +106,10 @@ void AMyPlayerController::BeginPlay()
 	UserInfoWidget->BindPlayerStat(possessedPawn->MyStat);
 
 	//스킬위젯
-	SkillWidget = CreateWidget<UUserWidget>(this, SkillClass);
+	SkillWidget = CreateWidget<UPlayerSkillPanelWidget>(this, SkillClass);
+	
 	SkillWidget->AddToViewport();
+	SkillWidget->BindPlayerSkillComponent(possessedPawn->GetSkillComponent());
 
 
 	//아이템 정보 위젯
@@ -137,26 +141,23 @@ void AMyPlayerController::BeginPlay()
 	NoticeWidget->SetVisibility(ESlateVisibility::Collapsed);
 	NoticeWidget->BindUIToMyController(*this);
 
-	//YouDied 위젯
-	YouDiedWidget = CreateWidget<UUserWidget>(this, YouDiedWidgetClass);
-	YouDiedWidget->AddToViewport();
-	YouDiedWidget->SetVisibility(ESlateVisibility::Collapsed);
+	
 
-	//enemyFelled 위젯
-	BossFelledWidget = CreateWidget<UUserWidget>(this, BossFelledWidgetClass);
+	/*enemyFelled 위젯
+	BossFelledWidget = CreateWidget<UUserWidget>(this, BossFelledWidgetClass);*/
 	
 	//BossFelledWidget->SetVisibility(ESlateVisibility::Collapsed);
 
-	//월드에 배치된 Trigger 타입의 액터 가져와 게임 엔딩 트리거에 저장.
-	for (ATriggerBox* TriggerBox : TActorRange<ATriggerBox>(GetWorld()))
-	{
-		if (TriggerBox)
-		{
-			EndingTrigger = TriggerBox;
-			EndingTrigger->SetActorEnableCollision(false);
-		}
-	}
 	
+
+	
+	//플레이어가 죽었을 때 델리게이트.
+	possessedPawn->MyStat->OnHPIsZero.AddLambda([this]()->void {
+		//YouDied 위젯
+		YouDiedWidget = CreateWidget<UUserWidget>(this, YouDiedWidgetClass);
+		YouDiedWidget->AddToViewport();
+		});
+
 	//플레이어가 NPC와 만났을 때 델리게이트.
 	possessedPawn->OnPlayerMeetNPC().AddLambda([this](AMyNPC* _NPC)->void {
 		AddPopup(*DialogueWidget);//UI에 추가.   
@@ -185,14 +186,41 @@ void AMyPlayerController::BeginPlay()
 		BossHPWidget->SetVisibility(ESlateVisibility::Visible); // HPUI 보이게 하기.
 
 		IsCinematicPlaying = false; 
+
+		//월드에 배치된 Trigger 타입의 액터 가져와 게임 엔딩 트리거에 저장.
+		for (ATriggerBox* TriggerBox : TActorRange<ATriggerBox>(GetWorld()))
+		{
+			if (TriggerBox)
+			{
+				EndingTrigger = TriggerBox;
+				EndingTrigger->SetActorEnableCollision(false);
+			}
+		}
+
+		//월드에 배치된 Trigger 타입의 액터 가져와 게임 엔딩 트리거에 저장.
+		for (AMyNPC* EndNPC : TActorRange<AMyNPC>(GetWorld()))
+		{
+			if (EndNPC)
+			{
+				EndingNPC = EndNPC;
+				EndingNPC->SetActorEnableCollision(false);
+				EndingNPC->GetMesh()->SetVisibility(false);
+				//EndingNPC->
+			}
+		}
 		});
 
 	//플레이어가 보스를 퇴치했을때 델리게이트.
 	OnBossFightEndDelegate.AddLambda([this]()->void {
 		BossHPWidget->SetVisibility(ESlateVisibility::Collapsed); // 보스 HP UI 안보이게 하기.  숨겼다가 금방 다시 쓸것만 Visibility 설정하고 나머진 내리는게 나을듯?
 		//BossFelledWidget->SetVisibility(ESlateVisibility::Visible); // 보스 격파 UI Visible.
+		//enemyFelled 위젯
+		BossFelledWidget = CreateWidget<UUserWidget>(this, BossFelledWidgetClass); 
 		BossFelledWidget->AddToViewport();
 		EndingTrigger->SetActorEnableCollision(true);
+
+		EndingNPC->SetActorEnableCollision(true);
+		EndingNPC->GetMesh()->SetVisibility(true);
 		});
 
 	//알림창이 업데이트될 때 델리게이트.
@@ -223,6 +251,11 @@ void AMyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("Roll"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallRoll);
 	InputComponent->BindAction(TEXT("DrinkPotion"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallDrinkPotion);
 	InputComponent->BindAction(TEXT("LockOn"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallLockOn);
+	InputComponent->BindAction(TEXT("Skill_1"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallSkill_1);
+	InputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Pressed, this, &AMyPlayerController::CallSprint);
+	InputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Released, this, &AMyPlayerController::CallSprintEnd);
+
+
 
 }
 
@@ -234,18 +267,29 @@ void AMyPlayerController::NextSentence()
 
 #pragma region InputBindFunctions
 
-//void AMyPlayerController::PressedAnyKey()
-//{
-//	if (possessedPawn)
-//	{
-//		if (possessedPawn->GetIsPlayerTalking())
-//		{
-//			OnAnyInputPressedEvent.Broadcast();
-//		}
-//	}
-//}
+void AMyPlayerController::CallSprintEnd()
+{
+	if (possessedPawn)
+	{
+		possessedPawn->SprintEnd();
+	}
+}
 
+void AMyPlayerController::CallSprint()
+{
+	if (possessedPawn)
+	{
+		possessedPawn->Sprint();
+	}
+}
 
+void AMyPlayerController::CallSkill_1()
+{
+	if (possessedPawn)
+	{
+		possessedPawn->Skill_1();
+	}
+}
 
 void AMyPlayerController::CallLockOn()
 {

@@ -15,7 +15,10 @@ enum class EBossPattern : uint8
 {
 	BOSSPATTERN_NORMAL_ATTACK1 UMETA(DisplayName = "NormalAttack1"),
 	BOSSPATTERN_NORMAL_ATTACK2 UMETA(DisplayName = "NormalAttack2"),
-	BOSSPATTERN_NORMAL_ATTACK3 UMETA(DisplayName = "NormalAttack3")
+	BOSSPATTERN_NORMAL_ATTACK3 UMETA(DisplayName = "NormalAttack3"),
+	BOSSPATTERN_COMBO_ATTACK UMETA(DisplayName = "ComboAttack"),
+	BOSSPATTERN_STAB UMETA(DisplayName = "Stab"),
+	BOSSPATTERN_KICK UMETA(DisplayName = "Kick")
 };
 
 UCLASS()
@@ -33,4 +36,6 @@ public:
 protected:
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
+private:
+	class AMyBoss* OwnerPawn;
 };

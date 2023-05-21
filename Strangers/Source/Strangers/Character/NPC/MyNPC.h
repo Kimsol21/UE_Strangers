@@ -35,6 +35,9 @@ public:
 
 	UDialogueManagerComponent* GetDialogueManagerComponent() const { return DialogueManager; };
 
+	USkeletalMesh* Mesh;
+	UAnimInstance* Anim;
+
 private:
 	//FOnFoundPlayerEvent OnFoundPlayerEvent;
 
