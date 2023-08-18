@@ -1,9 +1,5 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Monster_AnimInstance.h"
 #include "Character/Monster/MyMonster.h"
-
 
 UMonster_AnimInstance::UMonster_AnimInstance()
 {
@@ -29,8 +25,6 @@ void UMonster_AnimInstance::NativeInitializeAnimation()
 
 	MonsterReference = Cast<AMyMonster>(TryGetPawnOwner());
 	if (!::IsValid(MonsterReference)) return;
-
-	
 }
 
 void UMonster_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -40,21 +34,20 @@ void UMonster_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (!IsDead)
 	{
 		if (!::IsValid(MonsterReference)) return;
-		CurrentPawnSpeed = MonsterReference->GetVelocity().Size(); //캐릭터 속도 판별.
-
+		CurrentPawnSpeed = MonsterReference->GetVelocity().Size();
 	}
 }
 
-void UMonster_AnimInstance::AnimNotify_AttackHitCheck() //해당 노티파이가 발생하면, 
+void UMonster_AnimInstance::AnimNotify_AttackHitCheck() 
 {
-	OnAttackHitCheck.Broadcast(); //선언한 델리게이트에 바인딩된 함수들 실행(Broadcast).
+	OnAttackHitCheck.Broadcast();
 }
 
 void UMonster_AnimInstance::PlayAttackMontage()
 {
 	if (IsDead) return;
 	
-	Montage_Play(AttackMontage, 1.0f);//AnimInstance가 제공하는 함수. 인자:플레이할 몽타주, 재생속도
+	Montage_Play(AttackMontage, 1.0f);
 }
 
 void UMonster_AnimInstance::PlayDamagedMontage()
